@@ -24,8 +24,8 @@
     "Last 2 weeks": "Protekla 2 tjedna",
     "Last month": "Protekli mjesec",
     "Last 3 months": "Protekla 3 mjeseca",
-    "between": "between",
-    "around": "around",
+    "between": "između",
+    "around": "oko",
     "and": "i",
     "From": "Od",
     "To": "Do",
@@ -586,7 +586,7 @@
     "virtAsstIobIntent": "You have %1 insulin on board",
     "virtAsstIobUnits": "%1 units of",
     "virtAsstLaunch": "What would you like to check on Nightscout?",
-    "virtAsstPreamble": "Your",
+    "virtAsstPreamble": "Vaš",
     "virtAsstPreamble3person": "%1 has a ",
     "virtAsstNoInsulin": "no",
     "virtAsstUploadBattery": "Your uploader battery is at %1",
@@ -694,5 +694,12 @@
     "Remove stored token": "Remove stored token",
     "Weekly Distribution": "Weekly Distribution",
     "Failed authentication": "Failed authentication",
-    "A device at IP address %1 attempted authenticating with Nightscout with wrong credentials. Check if you have an uploader setup with wrong API_SECRET or token?": "A device at IP address %1 attempted authenticating with Nightscout with wrong credentials. Check if you have an uploader setup with wrong API_SECRET or token?"
+    "A device at IP address %1 attempted authenticating with Nightscout with wrong credentials. Check if you have an uploader setup with wrong API_SECRET or token?": "A device at IP address %1 attempted authenticating with Nightscout with wrong credentials. Check if you have an uploader setup with wrong API_SECRET or token?",
+    "Default (with leading zero and U)": "Default (with leading zero and U)",
+    "Concise (with U, without leading zero)": "Concise (with U, without leading zero)",
+    "Minimal (without leading zero and U)": "Minimal (without leading zero and U)",
+    "Small Bolus Display": "Small Bolus Display",
+    "Large Bolus Display": "Large Bolus Display",
+    "Bolus Display Threshold": "Bolus Display Threshold",
+    "%1 U and Over": "%1 U and Over"
 }
