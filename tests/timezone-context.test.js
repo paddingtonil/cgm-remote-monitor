@@ -171,8 +171,61 @@ describe('timezone-context', function () {
       tz.isAwayAt(summer, { utcOffset: 0 }).should.equal(false);
     });
 
+    it('treats the home zone\'s other daylight-saving offset as home, not travel', function () {
+      // Loop re-syncs the pump clock (and so the profile offset) days after a
+      // DST change; a fixed GMT+3 in Israel's winter is still Israel.
+      tz.isAwayAt(winter, { utcOffset: 180 }).should.equal(false);
+      tz.isAwayAt(summer, { utcOffset: 120 }).should.equal(false);
+      tz.isAwayAt(winter, { utcOffset: 60 }).should.equal(true);
+      tz.isAwayAt(winter, { utcOffset: 240 }).should.equal(true);
+    });
+
     it('is false when nothing is known', function () {
       make({}).isAwayAt(winter, { utcOffset: 540 }).should.equal(false);
+    });
+  });
+
+  describe('Loop-style fixed-offset profiles (pump time zone)', function () {
+    // Loop writes the pump's zone as ETC/GMT+N (IANA sign: GMT+7 is UTC-7)
+    var history = [
+      storeProfile('2026-10-06T00:00:00Z', 'ETC/GMT-3') // back home, Israel summer time
+      , storeProfile('2026-09-20T12:00:00Z', 'ETC/GMT+4') // on a trip, UTC-4
+      , storeProfile('2026-03-28T00:00:00Z', 'ETC/GMT-3') // Israel summer time
+      , storeProfile('2020-01-01T00:00:00Z', 'ETC/GMT-2') // Israel winter time
+    ];
+    var tz = make({ homeTimezone: 'Asia/Jerusalem' }, profileWith(history));
+
+    it('detects the trip from the profile history alone', function () {
+      var onTrip = moment('2026-09-28T12:00:00Z').valueOf();
+      var resolved = tz.patientAt(onTrip, { utcOffset: 0 });
+      resolved.offset.should.equal(-240);
+      resolved.source.should.equal('profile');
+      tz.isAwayAt(onTrip, { utcOffset: 0 }).should.equal(true);
+      tz.zoneLabel(resolved.zone, resolved.offset).should.equal('UTC-4');
+    });
+
+    it('does not flag the daylight-saving changes as trips', function () {
+      tz.isAwayAt(moment('2026-02-10T12:00:00Z').valueOf(), null).should.equal(false); // GMT-2 in winter
+      tz.isAwayAt(moment('2026-06-10T12:00:00Z').valueOf(), null).should.equal(false); // GMT-3 in summer
+      tz.isAwayAt(moment('2026-10-20T12:00:00Z').valueOf(), null).should.equal(false); // GMT-3 after the trip
+    });
+
+    it('status() reports the trip while it is current', function () {
+      var during = tz.status({}, moment('2026-10-01T12:00:00Z').valueOf());
+      during.away.should.equal(true);
+      during.patient.offset.should.equal(-240);
+      tz.status({}, moment('2026-10-07T12:00:00Z').valueOf()).away.should.equal(false);
+    });
+  });
+
+  describe('zoneLabel', function () {
+    var tz = make({});
+
+    it('names IANA zones with their offset and fixed zones by offset only', function () {
+      tz.zoneLabel('Asia/Jerusalem', 120).should.equal('Asia/Jerusalem (UTC+2)');
+      tz.zoneLabel('Etc/GMT+4', -240).should.equal('UTC-4');
+      tz.zoneLabel('+05:30', 330).should.equal('UTC+5:30');
+      tz.zoneLabel(null, 540).should.equal('UTC+9');
     });
   });
 
