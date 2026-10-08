@@ -50,6 +50,14 @@ describe('Profile timezone history', function () {
     profile.applyTimezoneAt(moment(atHome)).format('HH:mm').should.equal('14:00');
   });
 
+  it('parseInTimezoneAt() reads a date in the zone of the profile active on that date', function () {
+    profile.parseInTimezoneAt('2024-01-15').toISOString().should.equal('2024-01-14T15:00:00.000Z'); // Tokyo midnight
+    profile.parseInTimezoneAt('2024-01-25').toISOString().should.equal('2024-01-24T22:00:00.000Z'); // Israel midnight
+    profile.parseInTimezoneAt('2024-01-15T06:30:00').format('HH:mm Z').should.equal('06:30 +09:00');
+    // the current-profile version still uses the zone active now
+    profile.parseInTimezone('2024-01-15').toISOString().should.equal('2024-01-14T22:00:00.000Z');
+  });
+
   it('utcOffsetAt() is null without a timezone', function () {
     var bare = require('../lib/profilefunctions')(null, helper.ctx);
     bare.loadData([storeProfile('2020-01-01', undefined)]);

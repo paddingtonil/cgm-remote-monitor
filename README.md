@@ -312,6 +312,8 @@ autonomy for your data:
 ### Predefined values for your browser settings (optional)
 
   * `TIME_FORMAT` (`12`)- possible values `12` or `24`
+  * `TIME_DISPLAY` (`patient`) - which wall clock times are shown in. `patient` shows a meal, bolus or reading at the local time where the patient was when it happened (from the record's `utcOffset`, else the timezone of the profile in effect at that time, else `HOME_TIMEZONE`), `profile` uses the profile timezone, `browser` uses the viewer's browser time. Each viewer can override this in the browser settings.
+  * `HOME_TIMEZONE` (empty) - the patient's home timezone as an IANA name, e.g. `Asia/Jerusalem`. When the patient's current timezone differs from it, a **Travelling** pill appears on the main screen and travelling days are badged in the reports. Set this when the uploader (Loop, Trio) rewrites the profile timezone while travelling; otherwise the profile timezone is used as home.
   * `DAY_START` (`7.0`) - time for start of day (0.0 - 24.0) for features using day time / night time options
   * `DAY_END` (`21.0`) - time for end of day (0.0 - 24.0) for features using day time / night time options
   * `NIGHT_MODE` (`off`) - possible values `on` or `off`
