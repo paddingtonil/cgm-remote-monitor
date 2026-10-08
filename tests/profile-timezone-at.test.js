@@ -65,6 +65,14 @@ describe('Profile timezone history', function () {
     (bare.utcOffsetAt(onTrip) === null).should.equal(true);
   });
 
+  it('loadData() replaces cached answers at once: the reports load the range history after first use', function () {
+    var reloaded = require('../lib/profilefunctions')(null, helper.ctx);
+    reloaded.loadData([storeProfile('2020-01-01T00:00:00Z', 'Asia/Jerusalem')]);
+    reloaded.getTimezoneAt(onTrip).should.equal('Asia/Jerusalem');
+    reloaded.loadData(history);
+    reloaded.getTimezoneAt(onTrip).should.equal('Etc/GMT-9');
+  });
+
   it('handles a sub-hour fixed offset', function () {
     var india = require('../lib/profilefunctions')(null, helper.ctx);
     india.loadData([storeProfile('2020-01-01', 'GMT+5:30')]);
