@@ -222,6 +222,24 @@ describe('timezone-context', function () {
     });
   });
 
+  describe('displayOffsetNow', function () {
+    var profile = profileWith([storeProfile('2020-01-01', 'Asia/Jerusalem')]);
+    var now = winter;
+    var data = { treatments: [{ mills: now - 60 * 1000, utcOffset: 540 }] };
+
+    it('follows the patient in patient mode', function () {
+      make({ homeTimezone: 'Asia/Jerusalem' }, profile).displayOffsetNow(data, now).should.equal(540);
+    });
+
+    it('is the profile zone in profile mode', function () {
+      make({ timeDisplay: 'profile', homeTimezone: 'Asia/Jerusalem' }, profile).displayOffsetNow(data, now).should.equal(120);
+    });
+
+    it('is null (browser) in browser mode', function () {
+      (make({ timeDisplay: 'browser' }, profile).displayOffsetNow(data, now) === null).should.equal(true);
+    });
+  });
+
   describe('labels', function () {
     it('formats offsets', function () {
       make({}).label(540).should.equal('UTC+9');

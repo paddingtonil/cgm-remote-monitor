@@ -712,5 +712,18 @@
     "Authorization failed. Reauthorize Nightscout access or ask the administrator to check your Loop command permissions.": "Authorization failed. Reauthorize Nightscout access or ask the administrator to check your Loop command permissions.",
     "Could not confirm whether Loop received this command. Check your connection and Loop before submitting it again.": "Could not confirm whether Loop received this command. Check your connection and Loop before submitting it again.",
     "Nightscout returned an error without details. Check Loop before submitting again, and ask the Nightscout administrator to check the server logs.": "Nightscout returned an error without details. Check Loop before submitting again, and ask the Nightscout administrator to check the server logs.",
-    "MongoDB password and API_SECRET match. This is a really bad idea. Please change both and do not reuse passwords across the system.": "MongoDB password and API_SECRET match. This is a really bad idea. Please change both and do not reuse passwords across the system."
+    "MongoDB password and API_SECRET match. This is a really bad idea. Please change both and do not reuse passwords across the system.": "MongoDB password and API_SECRET match. This is a really bad idea. Please change both and do not reuse passwords across the system.",
+    "Time zone": "אזור זמן",
+    "Travelling": "בנסיעה",
+    "Patient time zone": "אזור הזמן של המטופל",
+    "Patient local time": "השעה המקומית של המטופל",
+    "Home time zone": "אזור זמן הבית",
+    "Home local time": "השעה המקומית בבית",
+    "Away since": "בנסיעה מאז",
+    "Browser time": "שעת הדפדפן",
+    "Time display": "תצוגת שעה",
+    "Patient time": "שעת המטופל",
+    "Profile time": "שעת הפרופיל",
+    "Patient was in %1 on this day": "ביום זה המטופל היה ב-%1",
+    "Travelling on %1 of %2 days shown": "בנסיעה ב-%1 מתוך %2 הימים המוצגים"
 }

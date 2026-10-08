@@ -714,5 +714,18 @@
     "Authorization failed. Reauthorize Nightscout access or ask the administrator to check your Loop command permissions.": "Authorization failed. Reauthorize Nightscout access or ask the administrator to check your Loop command permissions.",
     "Could not confirm whether Loop received this command. Check your connection and Loop before submitting it again.": "Could not confirm whether Loop received this command. Check your connection and Loop before submitting it again.",
     "Nightscout returned an error without details. Check Loop before submitting again, and ask the Nightscout administrator to check the server logs.": "Nightscout returned an error without details. Check Loop before submitting again, and ask the Nightscout administrator to check the server logs.",
-    "MongoDB password and API_SECRET match. This is a really bad idea. Please change both and do not reuse passwords across the system.": "MongoDB slaptažodis sutampa su API_SECRET. Tai labai bloga idėja. Pakeiskite abu ir nenaudokite tų pačių slaptažodžių skirtingose sistemos vietose."
+    "MongoDB password and API_SECRET match. This is a really bad idea. Please change both and do not reuse passwords across the system.": "MongoDB slaptažodis sutampa su API_SECRET. Tai labai bloga idėja. Pakeiskite abu ir nenaudokite tų pačių slaptažodžių skirtingose sistemos vietose.",
+    "Time zone": "Laiko juosta",
+    "Travelling": "Kelionėje",
+    "Patient time zone": "Paciento laiko juosta",
+    "Patient local time": "Paciento vietos laikas",
+    "Home time zone": "Namų laiko juosta",
+    "Home local time": "Namų vietos laikas",
+    "Away since": "Išvykęs nuo",
+    "Browser time": "Naršyklės laikas",
+    "Time display": "Laiko rodymas",
+    "Patient time": "Paciento laikas",
+    "Profile time": "Profilio laikas",
+    "Patient was in %1 on this day": "Šią dieną pacientas buvo %1",
+    "Travelling on %1 of %2 days shown": "Kelionėje %1 iš %2 rodomų dienų"
 }
