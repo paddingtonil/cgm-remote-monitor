@@ -223,6 +223,33 @@ describe('timezone-context', function () {
     });
   });
 
+  describe('homeDifference / differenceText', function () {
+    var tz = make({ homeTimezone: 'Asia/Jerusalem' });
+    var september = moment('2026-09-28T12:00:00Z').valueOf(); // Israel UTC+3
+
+    it('gives the minutes ahead of (or behind) home', function () {
+      tz.homeDifference(-240, september).should.equal(-420);
+      tz.homeDifference(540, september).should.equal(360);
+      tz.homeDifference(180, september).should.equal(0);
+      (tz.homeDifference(null, september) === null).should.equal(true);
+      (make({}).homeDifference(120, september) === null).should.equal(true);
+    });
+
+    it('formats the difference in hours and minutes', function () {
+      tz.differenceText(-420).should.equal('7h behind home');
+      tz.differenceText(360).should.equal('6h ahead of home');
+      tz.differenceText(150).should.equal('2h 30m ahead of home');
+      tz.differenceText(0).should.equal('');
+      tz.differenceText(null).should.equal('');
+    });
+
+    it('translates through the given function', function () {
+      var seen = [];
+      tz.differenceText(-60, function (text, options) { seen.push(text, options.params[0]); return 'x'; }).should.equal('x');
+      seen.should.eql(['%1 behind home', '1h']);
+    });
+  });
+
   describe('zoneLabel', function () {
     var tz = make({});
 

@@ -731,4 +731,8 @@
     ,"Travelling on %1 of %2 days shown":"Travelling on %1 of %2 days shown"
     ,"Pump time zone in this range":"Pump time zone in this range"
     ,"from %1":"from %1"
+    ,"Trip":"Trip"
+    ,"Time difference":"Time difference"
+    ,"%1 behind home":"%1 behind home"
+    ,"%1 ahead of home":"%1 ahead of home"
 }

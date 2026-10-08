@@ -64,12 +64,13 @@ describe('timezone plugin (travelling indicator)', function () {
 
     var pill = sbx.pills[0];
     (pill.hide === undefined || pill.hide === false).should.equal(true);
-    pill.label.should.equal('Travelling');
-    pill.value.should.equal('UTC+9');
+    pill.label.should.equal('Trip');
+    pill.value.should.equal('UTC+9 (7h ahead of home)');
 
     var info = {};
     pill.info.forEach(function (row) { info[row.label] = row.value; });
     info['Patient time zone'].should.equal('UTC+9');
+    info['Time difference'].should.equal('7h ahead of home');
     info['Patient local time'].should.equal('9:00 PM');
     info['Home time zone'].should.equal('Asia/Jerusalem (UTC+2)');
     info['Home local time'].should.equal('2:00 PM');

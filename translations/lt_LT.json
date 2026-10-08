@@ -729,5 +729,9 @@
     "Patient was in %1 on this day": "Šią dieną pacientas buvo %1",
     "Travelling on %1 of %2 days shown": "Kelionėje %1 iš %2 rodomų dienų",
     "Pump time zone in this range": "Pompos laiko juosta šiame intervale",
-    "from %1": "nuo %1"
+    "from %1": "nuo %1",
+    "Trip": "Kelionė",
+    "Time difference": "Laiko skirtumas",
+    "%1 behind home": "%1 vėliau nei namuose",
+    "%1 ahead of home": "%1 anksčiau nei namuose"
 }
