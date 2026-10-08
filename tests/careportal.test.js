@@ -216,11 +216,14 @@ describe('careportal', function ( ) {
         restoreTreatmentPost(mocks);
       }
 
-      var expectedCreatedAt = client.utils.mergeInputTime(testCase.expectedTime, testCase.expectedDate).toDate().toISOString();
+      var expectedCreatedAt = client.utils.mergeInputTime(testCase.expectedTime, testCase.expectedDate).toDate();
 
       mocks.treatment.eventType.should.equal('BG Check');
-      mocks.treatment.created_at.should.equal(expectedCreatedAt);
-      mocks.treatment.created_at.should.not.equal(client.utils.mergeInputTime(testCase.expectedTime, testCase.utcDate).toDate().toISOString());
+      // created_at carries the browser offset (not "Z") so the server can record where the entry was made
+      new Date(mocks.treatment.created_at).getTime().should.equal(expectedCreatedAt.getTime());
+      mocks.treatment.created_at.should.match(/[+-]\d{2}:\d{2}$/);
+      mocks.treatment.utcOffset.should.equal(-expectedCreatedAt.getTimezoneOffset());
+      new Date(mocks.treatment.created_at).getTime().should.not.equal(client.utils.mergeInputTime(testCase.expectedTime, testCase.utcDate).toDate().getTime());
     });
   });
 

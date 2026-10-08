@@ -86,13 +86,40 @@ describe('client-core/careportal/normalize-treatment', function () {
 
   it('uses opts.now for created_at when no eventTime is supplied', function () {
     var out = normalize(baseRaw(), { now: fixedNow });
-    out.created_at.should.equal(fixedNow.toISOString());
+    new Date(out.created_at).getTime().should.equal(fixedNow.getTime());
   });
 
   it('uses data.eventTime for created_at when supplied', function () {
     var t = new Date('2024-06-01T12:00:00Z');
     var out = normalize(baseRaw({ eventTime: t }), { now: fixedNow });
-    out.created_at.should.equal(t.toISOString());
+    new Date(out.created_at).getTime().should.equal(t.getTime());
+  });
+
+  it('writes created_at with the browser offset, not "Z", and mirrors it in utcOffset', function () {
+    var t = new Date('2024-06-01T12:00:00Z');
+    var out = normalize(baseRaw({ eventTime: t }), { now: fixedNow });
+    var browserOffset = -t.getTimezoneOffset();
+    out.utcOffset.should.equal(browserOffset);
+    out.created_at.should.match(/[+-]\d{2}:\d{2}$/);
+    // the wall-clock part of the string is the browser's local time
+    var offsetSign = browserOffset < 0 ? '-' : '+';
+    var abs = Math.abs(browserOffset);
+    var suffix = offsetSign + String(Math.floor(abs / 60)).padStart(2, '0') + ':' + String(abs % 60).padStart(2, '0');
+    out.created_at.slice(-6).should.equal(suffix);
+  });
+
+  it('uses opts.utcOffset (the patient\'s offset) over the browser offset when given', function () {
+    var t = new Date('2024-06-01T12:00:00Z');
+    var out = normalize(baseRaw({ eventTime: t }), { now: fixedNow, utcOffset: 540 });
+    out.utcOffset.should.equal(540);
+    out.created_at.should.equal('2024-06-01T21:00:00.000+09:00');
+    new Date(out.created_at).getTime().should.equal(t.getTime());
+  });
+
+  it('ignores an invalid opts.utcOffset', function () {
+    var t = new Date('2024-06-01T12:00:00Z');
+    var out = normalize(baseRaw({ eventTime: t }), { now: fixedNow, utcOffset: 'abc' });
+    out.utcOffset.should.equal(-t.getTimezoneOffset());
   });
 
   it('drops profile when the eventType row in inputMatrix has profile=false', function () {
