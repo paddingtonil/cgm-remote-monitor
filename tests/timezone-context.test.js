@@ -222,6 +222,59 @@ describe('timezone-context', function () {
     });
   });
 
+  describe('travel periods declared by hand (TRAVEL_PERIODS)', function () {
+    var profile = profileWith([storeProfile('2020-01-01', 'Asia/Jerusalem')]);
+    var settings = {
+      homeTimezone: 'Asia/Jerusalem'
+      , travelPeriods: '2026-09-20..2026-10-05=America/New_York, 2026-12-24..2026-12-31=Europe/London bogus 2026-01-01..2026-01-02=Mars/Olympus'
+    };
+
+    it('parses the valid entries and skips the rest', function () {
+      var periods = make(settings, profile).travelPeriods();
+      periods.length.should.equal(2);
+      periods[0].zone.should.equal('America/New_York');
+      periods[1].zone.should.equal('Europe/London');
+    });
+
+    it('covers the whole trip, from home midnight on the first day to the end of the last day there', function () {
+      var tz = make(settings, profile);
+      // 20 Sep 00:00 Israel (UTC+3) = 19 Sep 21:00Z
+      (tz.travelPeriodAt(moment('2026-09-19T20:59:00Z').valueOf()) === null).should.equal(true);
+      tz.travelPeriodAt(moment('2026-09-19T21:00:00Z').valueOf()).zone.should.equal('America/New_York');
+      // 5 Oct 23:59 New York (UTC-4) = 6 Oct 03:59Z
+      tz.travelPeriodAt(moment('2026-10-06T03:59:00Z').valueOf()).zone.should.equal('America/New_York');
+      (tz.travelPeriodAt(moment('2026-10-06T04:00:00Z').valueOf()) === null).should.equal(true);
+    });
+
+    it('is used for records without their own offset, over the profile zone', function () {
+      var tz = make(settings, profile);
+      var onTrip = moment('2026-09-28T12:00:00Z').valueOf();
+      var resolved = tz.patientAt(onTrip, { utcOffset: 0 });
+      resolved.source.should.equal('travel');
+      resolved.zone.should.equal('America/New_York');
+      resolved.offset.should.equal(-240);
+      tz.isAwayAt(onTrip, { utcOffset: 0 }).should.equal(true);
+      tz.momentAt(onTrip, { utcOffset: 0 }).format('HH:mm').should.equal('08:00');
+    });
+
+    it('does not override a record that says where it was', function () {
+      var tz = make(settings, profile);
+      tz.patientAt(moment('2026-09-28T12:00:00Z').valueOf(), { utcOffset: 540 }).source.should.equal('record');
+    });
+
+    it('is ignored outside the declared dates', function () {
+      var tz = make(settings, profile);
+      tz.patientAt(moment('2026-10-20T12:00:00Z').valueOf(), null).source.should.equal('profile');
+    });
+
+    it('re-parses when the setting changes', function () {
+      var tz = make({ homeTimezone: 'Asia/Jerusalem', travelPeriods: '' }, profile);
+      tz.travelPeriods().length.should.equal(0);
+      tz.setSettings(settings);
+      tz.travelPeriods().length.should.equal(2);
+    });
+  });
+
   describe('displayOffsetNow', function () {
     var profile = profileWith([storeProfile('2020-01-01', 'Asia/Jerusalem')]);
     var now = winter;
