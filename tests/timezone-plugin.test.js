@@ -85,6 +85,44 @@ describe('timezone plugin (travelling indicator)', function () {
     sbx.pills[0].hide.should.equal(true);
   });
 
+  it('offers a Trip event type to the careportal, saved through its own hook', function () {
+    var types = plugin.getEventTypes();
+    types.length.should.equal(1);
+    types[0].val.should.equal('Travel');
+    types[0].name.should.equal('Trip');
+    types[0].travel.should.equal(true);
+    types[0].duration.should.equal(false);
+    (typeof types[0].submitHook).should.equal('function');
+
+    // careportal only shows the fields it knows about
+    var eventTypes = require('../lib/client-core/careportal/event-types');
+    eventTypes.buildInputMatrix(types).Travel.travel.should.equal(true);
+  });
+
+  it('rejects a trip without a usable zone or first day before anything is posted', function (done) {
+    var hook = plugin.getEventTypes()[0].submitHook;
+    var client = { tz: tzContext({ moment: moment, settings: { homeTimezone: 'Asia/Jerusalem' }, profile: null }) };
+    hook(client, { startDate: '2026-09-20', endDate: '2026-10-05', timezone: 'Mars/Olympus' }, function (error) {
+      (typeof error).should.equal('string');
+      done();
+    });
+  });
+
+  it('names a declared trip in the pill when that is where the patient is', function () {
+    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'patient' }, { treatments: [], sgvs: [] });
+    sbx.tz.setDeclaredTrips([{ _id: 't', eventType: 'Travel', startDate: '2024-01-10', endDate: '2024-01-20', timezone: 'Asia/Tokyo', created_at: '2024-01-10T00:00:00.000Z' }]);
+    plugin.setProperties(sbx);
+    plugin.updateVisualisation(sbx);
+
+    var pill = sbx.pills[0];
+    (pill.hide === undefined || pill.hide === false).should.equal(true);
+    pill.value.should.equal('UTC+9 (7h ahead of home)');
+    var info = {};
+    pill.info.forEach(function (row) { info[row.label] = row.value; });
+    info['Patient time zone'].should.equal('Asia/Tokyo (UTC+9)');
+    info['Declared trip'].should.equal('2024-01-10 – 2024-01-20');
+  });
+
   it('sandbox formatTime / formatDateTime use the display clock', function () {
     var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'patient' }, { treatments: [], sgvs: [] });
     sbx.formatTime(now, { utcOffset: 540 }).should.equal('9:00 PM');

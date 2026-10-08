@@ -413,6 +413,22 @@
           </label>
         </fieldset>
 
+        <fieldset id="travelInfo">
+          <legend class="translate">Trip</legend>
+          <label id="travelStartLabel" for="travelStart" class="left-column short-label">
+            <span class="translate">First day</span>
+            <input type="date" id="travelStart">
+          </label>
+          <label id="travelEndLabel" for="travelEnd" class="left-column short-label">
+            <span class="translate">Last day</span>
+            <input type="date" id="travelEnd">
+          </label>
+          <label id="travelZoneLabel" for="travelZone" class="left-column short-label">
+            <span class="translate">Time zone</span>
+            <select id="travelZone"></select>
+          </label>
+        </fieldset>
+
         <label id="insulinGivenLabel" for="insulinGiven" class="left-column short-label">
           <span class="translate">Insulin Given</span>
           <input type="number" step="any" min="0" id="insulinGiven" placeholder="Amount in units" class="titletranslate" pattern="[0-9.,]*">

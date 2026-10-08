@@ -360,6 +360,104 @@ describe('timezone-context', function () {
     });
   });
 
+  describe('trips declared on the site (Travel treatments)', function () {
+    var profile = profileWith([storeProfile('2020-01-01', 'Asia/Jerusalem')]);
+    var settings = { homeTimezone: 'Asia/Jerusalem' };
+
+    function travel (id, startDate, endDate, zone, createdAt) {
+      var treatment = { _id: id, eventType: 'Travel', startDate: startDate, timezone: zone, created_at: createdAt || (startDate + 'T00:00:00.000Z') };
+      if (endDate) treatment.endDate = endDate;
+      return treatment;
+    }
+
+    it('takes only the Travel treatments, and only the well-formed ones', function () {
+      var tz = make(settings, profile);
+      tz.setDeclaredTrips([
+        { _id: 'm', eventType: 'Meal Bolus', carbs: 30 }
+        , travel('ok', '2026-09-20', '2026-10-05', 'America/New_York')
+        , travel('badzone', '2026-09-20', '2026-10-05', 'Mars/Olympus')
+        , travel('baddate', '20.09.2026', '2026-10-05', 'America/New_York')
+        , travel('reversed', '2026-10-05', '2026-09-20', 'America/New_York')
+        , null
+      ]);
+      var trips = tz.declaredTrips();
+      trips.length.should.equal(1);
+      trips[0].id.should.equal('ok');
+      trips[0].zone.should.equal('America/New_York');
+      trips[0].startDate.should.equal('2026-09-20');
+      trips[0].endDate.should.equal('2026-10-05');
+    });
+
+    it('covers the trip like a TRAVEL_PERIODS entry: home midnight on the first day to the end of the last day there', function () {
+      var tz = make(settings, profile);
+      tz.setDeclaredTrips([travel('t', '2026-09-20', '2026-10-05', 'America/New_York')]);
+      (tz.travelPeriodAt(moment('2026-09-19T20:59:00Z').valueOf()) === null).should.equal(true);
+      tz.travelPeriodAt(moment('2026-09-19T21:00:00Z').valueOf()).id.should.equal('t');
+      tz.travelPeriodAt(moment('2026-10-06T03:59:00Z').valueOf()).id.should.equal('t');
+      (tz.travelPeriodAt(moment('2026-10-06T04:00:00Z').valueOf()) === null).should.equal(true);
+    });
+
+    it('overrides the automatic detection for those days', function () {
+      var history = [storeProfile('2020-01-01', 'Asia/Jerusalem')];
+      var tz = make(settings, profileWith(history));
+      var onTrip = moment('2026-09-22T12:00:00Z').valueOf();
+      tz.patientAt(onTrip, { utcOffset: 0 }).source.should.equal('profile');
+      tz.isAwayAt(onTrip, { utcOffset: 0 }).should.equal(false);
+
+      tz.setDeclaredTrips([travel('t', '2026-09-20', '2026-09-24', 'America/New_York')]);
+      var resolved = tz.patientAt(onTrip, { utcOffset: 0 });
+      resolved.source.should.equal('travel');
+      resolved.zone.should.equal('America/New_York');
+      resolved.offset.should.equal(-240);
+      tz.isAwayAt(onTrip, { utcOffset: 0 }).should.equal(true);
+      tz.momentAt(onTrip, { utcOffset: 0 }).format('HH:mm').should.equal('08:00');
+      // the report day starts at New York midnight
+      tz.dayStart('2026-09-22').format().should.equal('2026-09-22T00:00:00-04:00');
+    });
+
+    it('is open-ended without a last day', function () {
+      var tz = make(settings, profile);
+      tz.setDeclaredTrips([travel('t', '2026-09-20', null, 'Asia/Tokyo')]);
+      (tz.declaredTrips()[0].endDate === null).should.equal(true);
+      tz.patientAt(moment('2027-03-01T12:00:00Z').valueOf(), null).zone.should.equal('Asia/Tokyo');
+      (tz.travelPeriodAt(moment('2026-09-01T12:00:00Z').valueOf()) === null).should.equal(true);
+    });
+
+    it('falls back to the record time, in the home zone, when a record has no first day', function () {
+      var tz = make(settings, profile);
+      // 19 Sep 22:30Z is already 20 Sep 01:30 in Israel (UTC+3)
+      tz.setDeclaredTrips([{ _id: 'old', eventType: 'Travel', timezone: 'America/New_York', endDate: '2026-10-05', created_at: '2026-09-19T22:30:00.000Z' }]);
+      tz.declaredTrips()[0].startDate.should.equal('2026-09-20');
+    });
+
+    it('comes before TRAVEL_PERIODS and the newest declaration wins where they overlap', function () {
+      var tz = make({ homeTimezone: 'Asia/Jerusalem', travelPeriods: '2026-09-20..2026-10-05=Europe/London' }, profile);
+      tz.setDeclaredTrips([
+        travel('first', '2026-09-20', '2026-10-05', 'America/New_York', '2026-09-01T00:00:00.000Z')
+        , travel('later', '2026-09-25', '2026-09-27', 'America/Chicago', '2026-09-02T00:00:00.000Z')
+      ]);
+      tz.travelPeriods().length.should.equal(3);
+      tz.travelPeriods()[2].zone.should.equal('Europe/London');
+      tz.travelPeriodAt(moment('2026-09-22T12:00:00Z').valueOf()).zone.should.equal('America/New_York');
+      tz.travelPeriodAt(moment('2026-09-26T12:00:00Z').valueOf()).zone.should.equal('America/Chicago');
+    });
+
+    it('forgets trips that are no longer in the data', function () {
+      var tz = make(settings, profile);
+      tz.setDeclaredTrips([travel('t', '2026-09-20', '2026-10-05', 'America/New_York')]);
+      tz.declaredTrips().length.should.equal(1);
+      tz.setDeclaredTrips([]);
+      tz.declaredTrips().length.should.equal(0);
+      tz.patientAt(moment('2026-09-22T12:00:00Z').valueOf(), null).source.should.equal('profile');
+    });
+
+    it('exposes the event type the treatments are stored under', function () {
+      tzContext.TRAVEL_EVENT_TYPE.should.equal('Travel');
+      tzContext.isTravelTreatment({ eventType: 'Travel' }).should.equal(true);
+      tzContext.isTravelTreatment({ eventType: 'Note' }).should.equal(false);
+    });
+  });
+
   describe('displayOffsetNow', function () {
     var profile = profileWith([storeProfile('2020-01-01', 'Asia/Jerusalem')]);
     var now = winter;
