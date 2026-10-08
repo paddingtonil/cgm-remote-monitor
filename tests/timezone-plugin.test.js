@@ -108,6 +108,17 @@ describe('timezone plugin (travelling indicator)', function () {
     });
   });
 
+  it('refuses a trip declared in the home time zone, which would change nothing', function (done) {
+    var hook = plugin.getEventTypes()[0].submitHook;
+    var client = { tz: tzContext({ moment: moment, settings: { homeTimezone: 'Asia/Jerusalem' }, profile: profileWith('Asia/Jerusalem') }) };
+    // the pump's own zone for Israel in summer, as Loop writes it
+    hook(client, { startDate: '2026-09-20', endDate: '2026-10-05', timezone: 'Etc/GMT-3' }, function (error) {
+      error.should.containEql('Etc/GMT-3');
+      error.should.containEql('home time zone');
+      done();
+    });
+  });
+
   it('names a declared trip in the pill when that is where the patient is', function () {
     var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'patient' }, { treatments: [], sgvs: [] });
     sbx.tz.setDeclaredTrips([{ _id: 't', eventType: 'Travel', startDate: '2024-01-10', endDate: '2024-01-20', timezone: 'Asia/Tokyo', created_at: '2024-01-10T00:00:00.000Z' }]);
