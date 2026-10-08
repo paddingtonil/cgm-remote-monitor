@@ -384,4 +384,124 @@ describe('timezone-context', function () {
       make({}).label(330).should.equal('UTC+5:30');
     });
   });
+
+  describe('a pump offset that counts as home shows home\'s real clock', function () {
+    // Israel left daylight saving on 2024-10-27 (UTC+3 -> UTC+2); the pump
+    // kept UTC+3 until it was re-synced.
+    var afterChange = moment('2024-10-30T12:00:00Z').valueOf();
+    var profile = profileWith([storeProfile('2024-06-01', 'ETC/GMT-3')]);
+    var tz = make({ homeTimezone: 'Asia/Jerusalem' }, profile);
+
+    it('is home at its current offset during the daylight-saving grace', function () {
+      var at = tz.patientAt(afterChange, null);
+      at.offset.should.equal(120);
+      at.zone.should.equal('Asia/Jerusalem');
+      at.source.should.equal('home');
+      tz.isAwayAt(afterChange, null).should.equal(false);
+    });
+
+    it('still reports the pump zone itself when it is home\'s current offset', function () {
+      var before = moment('2024-10-20T12:00:00Z').valueOf();
+      var at = tz.patientAt(before, null);
+      at.offset.should.equal(180);
+      at.source.should.equal('profile');
+    });
+
+    it('does not mistake a trip for the grace', function () {
+      // Europe in summer is UTC+2, Israel's winter offset, but not within two
+      // weeks of a change at home.
+      var europe = make({ homeTimezone: 'Asia/Jerusalem' }, profileWith([storeProfile('2024-06-01', 'ETC/GMT-2')]));
+      var at = europe.patientAt(summer, null);
+      at.offset.should.equal(120);
+      at.source.should.equal('profile');
+      europe.isAwayAt(summer, null).should.equal(true);
+    });
+  });
+
+  describe('dayStart / dayOf (report days in the patient\'s clock)', function () {
+    // The pump time zone history Loop recorded on a trip from Israel to the
+    // US: synced to UTC-4 after landing on 25 Sep, UTC-5 on 29 Sep, UTC+2 at a
+    // stopover and back to UTC+3 at home on 6 Oct. Newest first, as the API
+    // returns them.
+    var trip = profileWith([
+      storeProfile('2026-10-06T16:18:00Z', 'ETC/GMT-3')
+      , storeProfile('2026-10-06T07:08:00Z', 'ETC/GMT-2')
+      , storeProfile('2026-09-29T14:00:00Z', 'ETC/GMT+5')
+      , storeProfile('2026-09-25T17:07:00Z', 'ETC/GMT+4')
+      , storeProfile('2026-06-01T00:00:00Z', 'ETC/GMT-3')
+    ]);
+    var tz = make({ homeTimezone: 'Asia/Jerusalem' }, trip);
+
+    function iso (mom) { return mom.clone().utc().format(); }
+
+    it('starts a home day at home\'s midnight', function () {
+      iso(tz.dayStart('2026-09-24')).should.equal('2026-09-23T21:00:00Z');
+      tz.dayStart('2026-09-24').utcOffset().should.equal(180);
+      iso(tz.dayStart('2026-10-07')).should.equal('2026-10-06T21:00:00Z');
+    });
+
+    it('shows the day the pump was synced abroad in the destination\'s clock', function () {
+      var start = tz.dayStart('2026-09-25');
+      iso(start).should.equal('2026-09-25T04:00:00Z');
+      start.utcOffset().should.equal(-240);
+      start.format('HH:mm').should.equal('00:00');
+    });
+
+    it('follows the patient through the trip', function () {
+      iso(tz.dayStart('2026-09-27')).should.equal('2026-09-27T04:00:00Z');
+      iso(tz.dayStart('2026-09-30')).should.equal('2026-09-30T05:00:00Z');
+      iso(tz.dayStart('2026-10-05')).should.equal('2026-10-05T05:00:00Z');
+    });
+
+    it('shows the day of the flight home in home\'s clock', function () {
+      var start = tz.dayStart('2026-10-06');
+      iso(start).should.equal('2026-10-05T21:00:00Z');
+      start.utcOffset().should.equal(180);
+    });
+
+    it('keeps a 7:00 meal at 7:00 wherever it was eaten', function () {
+      var breakfastInNewYork = moment('2026-09-27T11:00:00Z').valueOf();
+      tz.momentAt(breakfastInNewYork, null).format('HH:mm').should.equal('07:00');
+      tz.dayOf(breakfastInNewYork, null).should.equal('2026-09-27');
+      var dinnerInChicago = moment('2026-10-02T00:30:00Z').valueOf();
+      tz.momentAt(dinnerInChicago, null).format('HH:mm').should.equal('19:30');
+      tz.dayOf(dinnerInChicago, null).should.equal('2026-10-01');
+    });
+
+    it('notes every day from the first pump change until the zone is set back home', function () {
+      var ONE_HOUR = 60 * 60 * 1000;
+      function awayOnDay (day) {
+        var start = tz.dayStart(day).valueOf();
+        return [1, 4, 7, 10, 13, 16, 19, 22].some(function (hour) {
+          return tz.isAwayAt(start + hour * ONE_HOUR, null);
+        });
+      }
+      var away = [];
+      for (var d = moment.utc('2026-09-20'); d.isBefore(moment.utc('2026-10-10')); d.add(1, 'day')) {
+        if (awayOnDay(d.format('YYYY-MM-DD'))) away.push(d.format('YYYY-MM-DD'));
+      }
+      away.should.eql([
+        '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29', '2026-09-30'
+        , '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06'
+      ]);
+    });
+
+    it('is the profile zone of the day in profile mode', function () {
+      var profileMode = make({ timeDisplay: 'profile', homeTimezone: 'Asia/Jerusalem' }, trip);
+      iso(profileMode.dayStart('2026-09-27')).should.equal('2026-09-27T04:00:00Z');
+      iso(profileMode.dayStart('2026-09-24')).should.equal('2026-09-23T21:00:00Z');
+    });
+
+    it('is the browser\'s midnight in browser mode', function () {
+      var browser = make({ timeDisplay: 'browser', homeTimezone: 'Asia/Jerusalem' }, trip);
+      browser.dayStart('2026-09-27').valueOf().should.equal(moment('2026-09-27', 'YYYY-MM-DD').valueOf());
+    });
+
+    it('uses an IANA zone with its daylight saving when one is known', function () {
+      var declared = make({ homeTimezone: 'Asia/Jerusalem', travelPeriods: '2024-03-05..2024-03-15=America/New_York' }, null);
+      // New York moved to daylight saving on 2024-03-10
+      iso(declared.dayStart('2024-03-08')).should.equal('2024-03-08T05:00:00Z');
+      iso(declared.dayStart('2024-03-12')).should.equal('2024-03-12T04:00:00Z');
+    });
+  });
 });
