@@ -725,5 +725,7 @@
     "Patient time": "שעת המטופל",
     "Profile time": "שעת הפרופיל",
     "Patient was in %1 on this day": "ביום זה המטופל היה ב-%1",
-    "Travelling on %1 of %2 days shown": "בנסיעה ב-%1 מתוך %2 הימים המוצגים"
+    "Travelling on %1 of %2 days shown": "בנסיעה ב-%1 מתוך %2 הימים המוצגים",
+    "Pump time zone in this range": "אזור הזמן של המשאבה בטווח זה",
+    "from %1": "מ-%1"
 }

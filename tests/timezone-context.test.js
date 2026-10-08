@@ -171,13 +171,17 @@ describe('timezone-context', function () {
       tz.isAwayAt(summer, { utcOffset: 0 }).should.equal(false);
     });
 
-    it('treats the home zone\'s other daylight-saving offset as home, not travel', function () {
-      // Loop re-syncs the pump clock (and so the profile offset) days after a
-      // DST change; a fixed GMT+3 in Israel's winter is still Israel.
-      tz.isAwayAt(winter, { utcOffset: 180 }).should.equal(false);
-      tz.isAwayAt(summer, { utcOffset: 120 }).should.equal(false);
+    it('keeps the previous home offset as home for two weeks after a daylight-saving change', function () {
+      // Israel: summer time starts 27 March 2026 and ends 25 October 2026. Loop
+      // re-syncs the pump clock (and so the profile offset) days after a change.
+      tz.isAwayAt(moment('2026-04-05T12:00:00Z').valueOf(), { utcOffset: 120 }).should.equal(false);
+      tz.isAwayAt(moment('2026-11-01T12:00:00Z').valueOf(), { utcOffset: 180 }).should.equal(false);
+    });
+
+    it('otherwise treats the other daylight-saving offset as travel: a summer trip to Europe is UTC+2', function () {
+      tz.isAwayAt(moment('2026-09-28T12:00:00Z').valueOf(), { utcOffset: 120 }).should.equal(true);
+      tz.isAwayAt(winter, { utcOffset: 180 }).should.equal(true);
       tz.isAwayAt(winter, { utcOffset: 60 }).should.equal(true);
-      tz.isAwayAt(winter, { utcOffset: 240 }).should.equal(true);
     });
 
     it('is false when nothing is known', function () {
@@ -189,8 +193,8 @@ describe('timezone-context', function () {
     // Loop writes the pump's zone as ETC/GMT+N (IANA sign: GMT+7 is UTC-7)
     var history = [
       storeProfile('2026-10-06T00:00:00Z', 'ETC/GMT-3') // back home, Israel summer time
-      , storeProfile('2026-09-20T12:00:00Z', 'ETC/GMT+4') // on a trip, UTC-4
-      , storeProfile('2026-03-28T00:00:00Z', 'ETC/GMT-3') // Israel summer time
+      , storeProfile('2026-09-20T12:00:00Z', 'ETC/GMT-2') // on a trip to Europe, UTC+2
+      , storeProfile('2026-04-02T00:00:00Z', 'ETC/GMT-3') // Israel summer time, synced 6 days late
       , storeProfile('2020-01-01T00:00:00Z', 'ETC/GMT-2') // Israel winter time
     ];
     var tz = make({ homeTimezone: 'Asia/Jerusalem' }, profileWith(history));
@@ -198,14 +202,15 @@ describe('timezone-context', function () {
     it('detects the trip from the profile history alone', function () {
       var onTrip = moment('2026-09-28T12:00:00Z').valueOf();
       var resolved = tz.patientAt(onTrip, { utcOffset: 0 });
-      resolved.offset.should.equal(-240);
+      resolved.offset.should.equal(120);
       resolved.source.should.equal('profile');
       tz.isAwayAt(onTrip, { utcOffset: 0 }).should.equal(true);
-      tz.zoneLabel(resolved.zone, resolved.offset).should.equal('UTC-4');
+      tz.zoneLabel(resolved.zone, resolved.offset).should.equal('UTC+2');
     });
 
-    it('does not flag the daylight-saving changes as trips', function () {
+    it('does not flag the daylight-saving changes, nor a late pump re-sync, as trips', function () {
       tz.isAwayAt(moment('2026-02-10T12:00:00Z').valueOf(), null).should.equal(false); // GMT-2 in winter
+      tz.isAwayAt(moment('2026-03-30T12:00:00Z').valueOf(), null).should.equal(false); // still GMT-2, 3 days into summer time
       tz.isAwayAt(moment('2026-06-10T12:00:00Z').valueOf(), null).should.equal(false); // GMT-3 in summer
       tz.isAwayAt(moment('2026-10-20T12:00:00Z').valueOf(), null).should.equal(false); // GMT-3 after the trip
     });
@@ -213,7 +218,7 @@ describe('timezone-context', function () {
     it('status() reports the trip while it is current', function () {
       var during = tz.status({}, moment('2026-10-01T12:00:00Z').valueOf());
       during.away.should.equal(true);
-      during.patient.offset.should.equal(-240);
+      during.patient.offset.should.equal(120);
       tz.status({}, moment('2026-10-07T12:00:00Z').valueOf()).away.should.equal(false);
     });
   });

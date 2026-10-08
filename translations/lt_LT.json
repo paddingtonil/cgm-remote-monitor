@@ -727,5 +727,7 @@
     "Patient time": "Paciento laikas",
     "Profile time": "Profilio laikas",
     "Patient was in %1 on this day": "Šią dieną pacientas buvo %1",
-    "Travelling on %1 of %2 days shown": "Kelionėje %1 iš %2 rodomų dienų"
+    "Travelling on %1 of %2 days shown": "Kelionėje %1 iš %2 rodomų dienų",
+    "Pump time zone in this range": "Pompos laiko juosta šiame intervale",
+    "from %1": "nuo %1"
 }
