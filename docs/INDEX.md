@@ -51,6 +51,7 @@ This index provides navigation for the Nightscout documentation structure. Each 
 - [Agent Control Plane](./proposals/agent-control-plane-rfc.md) - AI agent collaboration design
 - [Testing Modernization](./proposals/testing-modernization-proposal.md) - Test framework updates
 - [MongoDB Modernization](./proposals/mongodb-modernization-implementation-plan.md) - Driver upgrade plan
+- [AI Insights Design](./proposals/ai-insights-design.md) - Therapy-settings analysis, trends, chat and meal insights via an LLM provider (Hebrew; port of the LoopInsights spec)
 
 ---
 
