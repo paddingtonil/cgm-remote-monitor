@@ -177,8 +177,10 @@ _הערת שפה: מסמכי המאגר כתובים אנגלית. מסמך זה
 |---|---|---|---|
 | `ENABLE=... aiinsights` | כבוי | מתג ראשי (`LoopInsights_isEnabled`) | 4 |
 | `AIINSIGHTS_API_KEY` / `AIINSIGHTS_API_KEY_FILE` | — | נקרא ל-enclave ונמחק מ-`process.env`. לעולם לא ב-settings | 3.1 `apiKey` |
-| `AIINSIGHTS_BASE_URL` | `https://api.openai.com/v1` | | 3.1 |
-| `AIINSIGHTS_MODEL` | `gpt-4o` | | 3.1 |
+| `AIINSIGHTS_BASE_URL` | `https://generativelanguage.googleapis.com/v1beta` | הכרעת מוצר: Gemini כברירת מחדל (המפרט: OpenAI) | 3.1 |
+| `AIINSIGHTS_MODEL` | `gemini-3.8-flash` | ראו הערת מודלים בסטטוס המימוש | 3.1 |
+| `AIINSIGHTS_GEMINI_GENERATION_CONFIG` | — | JSON שמתמזג ל-`generationConfig` (למשל `thinkingConfig`) | — |
+| `AIINSIGHTS_ANALYSIS_PERIOD` / `AIINSIGHTS_PERSONALITY` / `AIINSIGHTS_TIGHT_RANGE_UPPER_BOUND` | 14 / `supportive_coach` / 140 | ברירות מחדל של המפעיל להגדרות המשתמש | 4 |
 | `AIINSIGHTS_REQUEST_FORMAT` | אוטומטי מה-URL | `openai` / `anthropic` / `gemini` | 3.2 |
 | `AIINSIGHTS_ENDPOINT_PATH` | לפי פורמט | | 3.1 |
 | `AIINSIGHTS_API_VERSION` | — | Azure | 3.1 |
@@ -885,6 +887,19 @@ Mocha + should, לפי התבנית ב-`plugin-architecture-audit.md`. כל קו
 | 11 מיפוי | 5 | מורחב |
 
 ---
+
+## סטטוס מימוש
+
+| שלב | סטטוס | הערות |
+|---|---|---|
+| 0. תשתית | **הושלם** (2026-10-10) | `env.js`/`enclave.js` (מפתח ב-enclave, נמחק מ-`process.env` ומ-shadowEnv), 4 אוספים, `aiinsights-store.js`, `jobs.js`, `ratelimit.js`, `config.js`, router עם 14 נקודות קצה, תפקיד `ai-insights`, מצב locked |
+| 1. Therapy Settings | **הושלם** | `aggregator.js`, `basal-integrator.js`, `analyzers.js`, `context.js`, `prompts/`, `validator.js` (11 שלבים), `analysis.js`, דף `/insights`, pill |
+| 2. Trends + Ask | **הושלם** | `runTrends` עם מטמון יומי, `runChat` עם הקשר 9.5 מלא (real-time, therapy, 7 ימים, supplemental, live status) |
+| 3. Meals + Careportal | חלקי | `foodResponsePatterns`, `mealEvents`, פרומטי 7.3–7.5 ו-`parseDebrief` קיימים; `POST /careportal` לקפאין/אלכוהול קיים. חסר: נקודות קצה `/meals/*` ולשונית Meals |
+| 4. Monitor + Report | לא התחיל | `monitor.js`, `report.js`, `report-pdf.js`, תלות `pdfmake` |
+| 5. אופציונלי | לא התחיל | |
+
+ברירת מחדל לספק: Gemini, `gemini-3.8-flash` (מודלי 2.5 יוצאים משירות ב-2026-10-20). בדיקות: 272 בדיקות יחידה ו-API ב-`tests/aiinsights-*.test.js`.
 
 ## Revision History
 

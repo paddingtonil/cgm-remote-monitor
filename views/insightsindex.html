@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+    <head>
+      <meta name="viewport" content="width=device-width, maximum-scale=1, initial-scale=1, user-scalable=0" />
+      <meta name="apple-mobile-web-app-capable" content="yes">
+      <title>AI Insights</title>
+      <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+      <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+      <link rel="manifest" href="/manifest.json">
+      <link rel="shortcut icon" href="/images/favicon.ico">
+      <meta name="theme-color" content="#333333">
+
+      <link rel="preload" href="/css/main.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+      <link rel="preload" href="/css/dropdown.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+      <link rel="preload" href="/css/drawer.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+      <link rel="preload" href="/css/insights.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+      <link rel="preload" href="/css/ui-darkness/jquery-ui.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+      <%- include('preloadCSS')%>
+    </head>
+  <body>
+    <%- include('partials/toolbar') %>
+
+    <div id="ai_page">
+      <div id="ai_status" class="ai-banner" style="display:none"></div>
+
+      <ul id="ai_tabs" class="ai-tabs">
+        <li data-tab="settings" class="active"><span class="translate">Therapy Settings</span></li>
+        <li data-tab="trends"><span class="translate">Trends</span></li>
+        <li data-tab="ask"><span class="translate">Ask</span></li>
+        <li data-tab="config" class="ai-tab-right">&#9881; <span class="translate">Settings</span></li>
+      </ul>
+
+      <!-- Therapy Settings -->
+      <section id="ai_tab_settings" class="ai-tab">
+        <div class="ai-row">
+          <span class="translate">Period</span>:
+          <span id="ai_periods" class="ai-periods"></span>
+          <span id="ai_score" class="ai-score"></span>
+        </div>
+        <div id="ai_metrics" class="ai-metrics"></div>
+        <div class="ai-row ai-actions">
+          <button id="ai_analyze_basal" data-type="basal_rate" class="ai-analyze">Analyze Basal</button>
+          <button id="ai_analyze_cr" data-type="carb_ratio" class="ai-analyze">Analyze Carb Ratio</button>
+          <button id="ai_analyze_isf" data-type="insulin_sensitivity" class="ai-analyze">Analyze ISF</button>
+          <button id="ai_analyze_all" data-type="all" class="ai-analyze ai-primary">Analyze All</button>
+          <span id="ai_cost_hint" class="ai-muted"></span>
+        </div>
+        <div id="ai_job" class="ai-job" style="display:none"></div>
+
+        <h3 class="translate">Pending suggestions</h3>
+        <div id="ai_suggestions" class="ai-cards"></div>
+
+        <h3 class="translate">Detected patterns</h3>
+        <div id="ai_patterns" class="ai-patterns"></div>
+
+        <h3 class="translate">Recent evaluations</h3>
+        <div id="ai_history" class="ai-cards"></div>
+      </section>
+
+      <!-- Trends -->
+      <section id="ai_tab_trends" class="ai-tab" style="display:none">
+        <div class="ai-row">
+          <button class="ai-trend" data-tab="daily">Daily</button>
+          <button class="ai-trend" data-tab="weekly">Weekly</button>
+          <button class="ai-trend" data-tab="monthly">Monthly</button>
+          <button id="ai_trend_refresh" class="ai-muted-btn" title="Refresh (new AI call)">&#8635;</button>
+        </div>
+        <div id="ai_trend_metrics" class="ai-metrics"></div>
+        <div id="ai_trend_result" class="ai-card"></div>
+      </section>
+
+      <!-- Ask -->
+      <section id="ai_tab_ask" class="ai-tab" style="display:none">
+        <div id="ai_chat_log" class="ai-chat-log"></div>
+        <div class="ai-row ai-chat-input">
+          <input type="text" id="ai_chat_text" maxlength="4000" placeholder="Ask about your data…">
+          <button id="ai_chat_send" class="ai-primary">Send</button>
+          <button id="ai_chat_clear" class="ai-muted-btn">Clear</button>
+        </div>
+      </section>
+
+      <!-- Settings -->
+      <section id="ai_tab_config" class="ai-tab" style="display:none">
+        <fieldset class="browserSettings">
+          <legend class="translate">Provider</legend>
+          <div id="ai_provider_info" class="ai-kv"></div>
+          <button id="ai_test_connection">Test connection</button>
+          <span id="ai_test_result" class="ai-muted"></span>
+          <div id="ai_usage" class="ai-kv"></div>
+        </fieldset>
+
+        <fieldset class="browserSettings">
+          <legend class="translate">Privacy</legend>
+          <p class="ai-muted">Running an analysis sends your glucose readings, insulin delivery, carbohydrate entries and pump settings
+            from the selected period to the configured AI provider. No name, device identifiers or record ids are included.
+            Suggestions are advisory only and are never applied to your pump by Nightscout.</p>
+          <label><input type="checkbox" id="ai_privacy_ack"> I understand and agree to send this data to the AI provider</label>
+        </fieldset>
+
+        <fieldset class="browserSettings">
+          <legend class="translate">Analysis</legend>
+          <label>Default period <select id="ai_cfg_period"></select></label>
+          <label>Personality <select id="ai_cfg_personality"></select></label>
+          <label>Tight range upper bound <input type="number" id="ai_cfg_tight" min="120" max="160" step="5"> mg/dL</label>
+          <label>Bed hour <input type="number" id="ai_cfg_bed" min="0" max="23"></label>
+          <label>Wake hour <input type="number" id="ai_cfg_wake" min="0" max="23"></label>
+        </fieldset>
+
+        <fieldset class="browserSettings">
+          <legend class="translate">Features</legend>
+          <label><input type="checkbox" id="ai_f_circadian"> Circadian &amp; suspension analysis</label>
+          <label><input type="checkbox" id="ai_f_foodResponse"> Food response (Meal Insights)</label>
+          <label><input type="checkbox" id="ai_f_caffeineTracking"> Caffeine tracking</label>
+          <label><input type="checkbox" id="ai_f_alcoholTracking"> Alcohol tracking</label>
+          <label><input type="checkbox" id="ai_f_cgmBackfillDetection"> CGM signal quality</label>
+        </fieldset>
+
+        <fieldset class="browserSettings">
+          <legend class="translate">Budget</legend>
+          <label>Monthly cap (USD, 0 = none) <input type="number" id="ai_b_cap" min="0" step="0.5"></label>
+          <label>Warn at % <input type="number" id="ai_b_warn" min="0" max="100"></label>
+          <label><input type="checkbox" id="ai_b_hard"> Hard block over budget</label>
+          <label><input type="checkbox" id="ai_b_confirm"> Confirm cost before each call</label>
+        </fieldset>
+
+        <div class="ai-row">
+          <button id="ai_cfg_save" class="ai-primary">Save settings</button>
+          <span id="ai_cfg_status" class="ai-muted"></span>
+        </div>
+      </section>
+
+      <p class="ai-disclaimer">AI Insights is automatically generated for informational purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment. Always consult your healthcare provider before making changes to your diabetes therapy. All glucose values are shown in mg/dL.</p>
+    </div>
+
+    <%- include('partials/authentication-status') %>
+
+    <script src="<%= locals.bundle %>/js/bundle.app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/insightsinit.js"></script>
+  </body>
+</html>

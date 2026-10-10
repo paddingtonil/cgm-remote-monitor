@@ -1,0 +1,100 @@
+#ai_page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 16px 40px;
+  color: #ddd;
+  font-family: 'Open Sans', Helvetica, Arial, sans-serif;
+}
+
+.ai-banner {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 10px 0;
+  background: #3a2d00;
+  border: 1px solid #b8860b;
+  color: #ffe08a;
+}
+.ai-banner.ai-error { background: #3a0e0e; border-color: #c33; color: #ffb3b3; }
+.ai-banner.ai-ok { background: #0e2a12; border-color: #2e8b57; color: #b8f0c8; }
+.ai-banner button { margin-left: 10px; }
+
+.ai-tabs {
+  list-style: none;
+  display: flex;
+  gap: 4px;
+  padding: 0;
+  margin: 10px 0 14px;
+  border-bottom: 1px solid #444;
+}
+.ai-tabs li {
+  padding: 8px 14px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: #aaa;
+}
+.ai-tabs li.active { background: #222; border-color: #444; color: #fff; }
+.ai-tabs li.ai-tab-right { margin-left: auto; }
+
+.ai-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+.ai-actions button { padding: 6px 12px; }
+.ai-primary { background: #1a8a9e; color: #fff; border: none; border-radius: 4px; }
+.ai-primary:disabled, .ai-analyze:disabled { opacity: 0.5; cursor: default; }
+.ai-muted { color: #999; font-size: 0.9em; }
+.ai-muted-btn { background: transparent; color: #aaa; border: 1px solid #555; border-radius: 4px; }
+
+.ai-periods button { margin-right: 4px; padding: 4px 10px; border-radius: 12px; border: 1px solid #555; background: #222; color: #ccc; }
+.ai-periods button.active { background: #1a8a9e; color: #fff; border-color: #1a8a9e; }
+.ai-score { margin-left: auto; font-weight: bold; font-size: 1.1em; }
+
+.ai-metrics { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+.ai-chip { padding: 6px 10px; border-radius: 6px; background: #2a2a2a; border: 1px solid #444; min-width: 90px; }
+.ai-chip .ai-chip-label { display: block; font-size: 0.75em; color: #999; }
+.ai-chip .ai-chip-value { font-size: 1.15em; font-weight: bold; }
+.ai-chip.green { border-color: #74A52E; }
+.ai-chip.yellow { border-color: #F0CA4C; }
+.ai-chip.orange { border-color: #e08a1e; }
+.ai-chip.red { border-color: #D36265; }
+
+.ai-job { padding: 8px 12px; background: #1f2d33; border: 1px solid #1a8a9e; border-radius: 6px; margin: 8px 0; }
+
+.ai-cards { display: flex; flex-direction: column; gap: 10px; }
+.ai-card {
+  background: #202020;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.ai-card h4 { margin: 0 0 6px; font-size: 1.05em; }
+.ai-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; margin-left: 6px; }
+.ai-badge.low { background: #444; }
+.ai-badge.medium { background: #b8860b; color: #000; }
+.ai-badge.high { background: #2e8b57; }
+.ai-badge.warn { background: #c33; }
+.ai-badge.status { background: #333; color: #ccc; }
+.ai-plain { font-size: 1.05em; margin: 6px 0 8px; }
+.ai-blocks { border-collapse: collapse; margin: 6px 0; }
+.ai-blocks td, .ai-blocks th { padding: 3px 10px 3px 0; text-align: left; font-size: 0.95em; }
+.ai-blocks th { color: #999; font-weight: normal; }
+.ai-details { margin: 6px 0; }
+.ai-details summary { cursor: pointer; color: #9cd; }
+.ai-notes { color: #999; font-size: 0.85em; }
+.ai-card-actions { margin-top: 8px; display: flex; gap: 8px; }
+
+.ai-patterns .ai-pattern { padding: 6px 10px; border-left: 4px solid #d97706; margin: 4px 0; background: #262626; }
+.ai-patterns .ai-pattern.high { border-left-color: #dc2626; }
+
+.ai-chat-log { min-height: 200px; max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.ai-msg { padding: 8px 12px; border-radius: 10px; max-width: 85%; white-space: pre-wrap; }
+.ai-msg.user { align-self: flex-end; background: #1a8a9e; color: #fff; }
+.ai-msg.assistant { align-self: flex-start; background: #2a2a2a; }
+.ai-msg.pending { opacity: 0.6; font-style: italic; }
+.ai-chat-input input { flex: 1; min-width: 200px; padding: 8px; }
+
+.ai-kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 6px 0; }
+.ai-kv span:nth-child(odd) { color: #999; }
+#ai_tab_config label { display: block; margin: 6px 0; }
+#ai_tab_config fieldset { margin-bottom: 12px; }
+
+.ai-disclaimer { margin-top: 30px; font-size: 0.8em; color: #777; border-top: 1px solid #333; padding-top: 10px; }

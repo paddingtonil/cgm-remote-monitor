@@ -296,6 +296,7 @@ autonomy for your data:
   * `MONGO_PROFILE_COLLECTION`(`profile`) - The collection used to store your profiles
   * `MONGO_FOOD_COLLECTION`(`food`) - The collection used to store your food database
   * `MONGO_ACTIVITY_COLLECTION`(`activity`) - The collection used to store activity data
+  * `MONGO_AI_SUGGESTIONS_COLLECTION`(`ai_suggestions`), `MONGO_AI_ANALYSES_COLLECTION`(`ai_analyses`), `MONGO_AI_USAGE_COLLECTION`(`ai_usage`), `MONGO_AI_SETTINGS_COLLECTION`(`ai_settings`) - The collections used by the [`aiinsights`](#aiinsights-ai-insights) plugin
   * `MONGO_POOL_SIZE` (`5`) - MongoDB connection pool size. Adjust for your deployment needs.
   * `MONGO_MIN_POOL_SIZE` (`0`) - Minimum pool connections to keep open.
   * `MONGO_MAX_IDLE_TIME_MS` (`30000`) - Max idle time (ms) before closing a connection.
@@ -778,6 +779,27 @@ When APNs provides no failure details, the message says so. Unexpected failures 
   * `WEBHOOK_HOST` (`localhost`) - The host name or IP address of the receiving server.
   * `WEBHOOK_PORT` (`3000`) - The port of the receiving server. The port is always part of the address, so for a standard `https` server set this to `443`.
   * `WEBHOOK_PATH` (`/nightscout`) - The path the reading is sent to. Start it with `/`.
+
+##### `aiinsights` (AI Insights)
+  Server-side analysis of your therapy settings (basal, carb ratio, ISF), period trend summaries and a chat about your own data, using an external LLM provider (Gemini by default; OpenAI-compatible and Anthropic endpoints are also supported). Add `aiinsights` to `ENABLE`, then open `/insights`. A status pill on the dashboard shows pending suggestions. The design is documented in [docs/proposals/ai-insights-design.md](docs/proposals/ai-insights-design.md).
+
+  **Important:** running an analysis sends glucose readings, insulin delivery, carbohydrate entries and pump settings for the selected period to the provider you configure. Nothing is sent until the operator sets `AIINSIGHTS_PRIVACY_ACK=true` *and* the user acknowledges the privacy notice in the AI Insights settings page. Suggestions are advisory only; Nightscout never changes pump settings. All values are shown in mg/dL.
+
+  **Access control.** The plugin uses four-part permissions (`api:aiinsights:<area>:<verb>`) that the default `readable` role does not match, and a new default role `ai-insights` that grants everything except settings changes. Create a subject with the roles `readable careportal ai-insights` in Admin Tools and use its token in the browser; settings changes and the connection test need `admin` or the API secret. If the unauthenticated default roles (`AUTH_DEFAULT_ROLES`) would grant access to the plugin, it starts **locked** and refuses every call until that is fixed, so an open Nightscout site never exposes clinical suggestions or chat.
+
+  Provider settings (read at startup; the key is held in memory only and is never written to the database, the browser or the logs):
+  * `AIINSIGHTS_API_KEY` - Provider API key. May also be supplied through `AIINSIGHTS_API_KEY_FILE`.
+  * `AIINSIGHTS_BASE_URL` (`https://generativelanguage.googleapis.com/v1beta`) - Provider base URL. Anthropic and Google endpoints are detected from the URL; any other URL is treated as OpenAI-compatible (OpenAI, Azure, OpenRouter, a local server, ...).
+  * `AIINSIGHTS_MODEL` (`gemini-3.8-flash`) - Model name, e.g. `gemini-3.8-flash`, `gemini-3.1-pro-preview`, `gpt-4o`, `claude-sonnet-4-5-20250514`.
+  * `AIINSIGHTS_REQUEST_FORMAT` - Force `openai`, `anthropic` or `gemini` instead of detecting it from the URL.
+  * `AIINSIGHTS_ENDPOINT_PATH`, `AIINSIGHTS_API_VERSION` (Azure `api-version`), `AIINSIGHTS_ORGANIZATION_ID` (OpenAI) - Optional overrides.
+  * `AIINSIGHTS_GEMINI_GENERATION_CONFIG` - Optional JSON merged into Gemini's `generationConfig`, e.g. `{"thinkingConfig":{"thinkingBudget":2048}}` for thinking models.
+  * `AIINSIGHTS_PRIVACY_ACK` (`false`) - Must be `true` before any data is sent to the provider.
+  * `AIINSIGHTS_ALLOW_PRIVATE_URL` (`false`) - Allow `http://` and private network addresses in `AIINSIGHTS_BASE_URL` (local models such as Ollama). Off by default to block server-side request forgery.
+  * `AIINSIGHTS_DEBUG_PROMPTS` (`false`) - Log full prompts and responses. Development only.
+  * `AIINSIGHTS_ANALYSIS_PERIOD` (`14`), `AIINSIGHTS_PERSONALITY` (`supportive_coach`), `AIINSIGHTS_TIGHT_RANGE_UPPER_BOUND` (`140`) - Operator defaults for the user-editable settings.
+
+  Requests always use `temperature` 0 and `max_tokens` 8192. Analyses run as background jobs (the page polls for the result), so they work behind the 30-second request limit of hosts such as Heroku. Every call is costed against an optional monthly budget that can warn, require confirmation, or block.
 
 #### Extended Settings
   Some plugins support additional configuration using extra environment variables.  These are prefixed with the name of the plugin and a `_`.  For example setting `MYPLUGIN_EXAMPLE_VALUE=1234` would make `extendedSettings.exampleValue` available to the `MYPLUGIN` plugin.
