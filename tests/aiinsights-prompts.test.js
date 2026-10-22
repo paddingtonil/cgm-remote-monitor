@@ -203,9 +203,14 @@ describe('aiinsights prompts', function () {
       prompt.should.containEql('You are Loopy, an expert-level automated insulin delivery (AID) therapy settings analyst. You think like a top board certified endocrinologist who specializes in insulin pump optimization. You analyze glucose, insulin, and carbohydrate data to determine whether therapy settings need adjustment.');
       prompt.should.containEql('YOUR MANDATE: Be analytically rigorous. You have this person\'s REAL data — their actual glucose readings, insulin delivery, carb logs, and pump settings. Every recommendation must cite specific numbers from THEIR data, not generic clinical wisdom. If the data does not justify a change, return zero suggestions — that is the correct response when settings are working. You are not here to impress or people-please. You are here to find real problems in THIS person\'s data and propose precise fixes grounded in THEIR numbers.');
       prompt.should.containEql('- BASAL RATE: Controls glucose during fasting periods. Analyze overnight (12AM-6AM) and   between-meal trends. In AID systems, the algorithm adjusts delivery around this baseline.   ⚠️ HIGHEST RISK SETTING — basal delivers insulin 24/7, including overnight when the user   is asleep.');
-      prompt.should.containEql('SAFETY RULES:\n1. Never suggest CR or ISF changes larger than 20% from current values in a single step.    For BASAL RATE, never suggest changes larger than 10% — basal delivers insulin continuously    and small changes compound over hours, especially overnight.');
+      prompt.should.containEql('SAFETY RULES:\n1. Never suggest CR, ISF or BASAL RATE changes larger than 20% from current values in a single step. The same 20% limit applies to every basal time block, including overnight. Basal delivers insulin continuously and changes compound over hours, so size each change to the evidence and prefer the smaller step when the signal is weak.');
       prompt.should.containEql('   - Carb Ratio: 2.0–150.0 g/U (recommended 4.0–28.0)\n   - ISF: 10.0–500.0 mg/dL/U (recommended 16.0–400.0)\n   - Basal Rate: 0.05–30.0 U/hr (recommended 0.05–10.0)\n   Values outside the recommended range should only be proposed with LOW confidence and explicit justification.');
-      prompt.should.containEql('IMPORTANT: If glucose outcomes are good (TIR >80%, time below range <4%, CV <36%), respect that the current settings are working for THIS person.');
+      prompt.should.containEql('GLUCOSE TARGET RANGES — ALWAYS EVALUATE BOTH:');
+      prompt.should.containEql('1. Maximum 20% change per time block.');
+      prompt.should.containEql('use the same 20% maximum as every other time block');
+      prompt.should.not.containEql('5–7%');
+      prompt.should.not.containEql('10% increments');
+      prompt.should.containEql('IMPORTANT: If glucose outcomes are good (standard TIR 70-180 >80%, time below range <4%, CV <36%), respect that the current settings are working for THIS person.');
       prompt.should.containEql('  On an empty stomach, drinking alcohol can also cause short term hypoglycemia. Alcohol is a toxin,   so the body \'spends\' extra glucose energy to process the toxin out. With no onboard glucose the user may go low. \nUSER ENGAGEMENT & ADHERENCE — When engagement metrics are provided:');
     });
 
@@ -233,7 +238,7 @@ describe('aiinsights prompts', function () {
         , '                }'
         , '            ],'
       ].join('\n'));
-      prompt.should.containEql('    "overall_assessment": "Factual summary including: time-of-day pattern summary, glucose outcome trends, and what the basal/bolus ratio tells us",\n    "next_recommended_focus": "carb_ratio|insulin_sensitivity|basal_rate|null"\n}');
+      prompt.should.containEql('    "overall_assessment": "Factual summary including: time-of-day pattern summary, glucose outcome trends, both the standard TIR and tight TIR figures exactly as given in the data, and what the basal/bolus ratio tells us",\n    "next_recommended_focus": "carb_ratio|insulin_sensitivity|basal_rate|null"\n}');
       prompt.should.containEql('If NO changes are warranted, return: { "suggestions": [], "past_suggestion_evaluations": {}, "overall_assessment": "...", "next_recommended_focus": null }');
       prompt.should.endWith('Combine all time blocks for the same setting type into a single suggestion. Do NOT return separate suggestions for the same setting — use multiple time_blocks within one suggestion.');
     });
@@ -383,7 +388,7 @@ describe('aiinsights prompts', function () {
     });
 
     it('appends the basal rate reminder only for basal_rate', function () {
-      const reminder = '⚠️ BASAL RATE REMINDER: Basal rate is the highest-risk setting to change. It delivers insulin continuously, including overnight when the user is asleep. Limit all proposed changes to ≤10% per time block. For overnight blocks (10PM–6AM), prefer even smaller changes (5–7%). If suggesting any basal increase, you MUST include a warning about monitoring for nighttime lows in your reasoning. If time below range is >2%, strongly consider whether basal is already too high.';
+      const reminder = '⚠️ BASAL RATE REMINDER: Basal rate is the highest-risk setting to change. It delivers insulin continuously, including overnight when the user is asleep. Limit all proposed changes to ≤20% per time block, including overnight blocks (10PM–6AM). If suggesting any basal increase, you MUST include a warning about monitoring for nighttime lows in your reasoning. If time below range is >2%, strongly consider whether basal is already too high.';
       const basal = settings.userPrompt(baseInput('basal_rate'));
       basal.should.endWith('If not, return empty suggestions. \n\n' + reminder + '\n\nRespond with JSON only, no markdown formatting.');
       settings.userPrompt(baseInput('carb_ratio')).should.not.containEql(reminder);

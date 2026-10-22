@@ -49,7 +49,7 @@ _הערת שפה: מסמכי המאגר כתובים אנגלית. מסמך זה
 | Meal Debrief | 7.5 | מלא: צילום התחזית נלקח מ-`devicestatus.loop.predicted` |
 | Background monitor + התראות | 6.11 | מלא, דרך צינור ההתראות הקיים (Pushover/IFTTT/UI) |
 | דוח Endo | 10 | HTML להדפסה (PDF דרך הדפדפן) |
-| זיהוי דפוסים לוקלי וציון הגדרות | 6.9, 6.10 | מלא |
+| זיהוי דפוסים לוקלי וציון הגדרות | 6.9, 6.10 | מלא. סטייה מכוונת מהמקור ב-6.10: 40 נקודות ה-TIR פוצלו ל-30 (TIR רגיל 70–180, אותה עקומה ב-×0.75) ו-10 (TIR צר: ≥70% = 10, ≥50% = 7, ≥30% = 4, מתחת = 0). `settingsAlreadyOptimal` דורש גם TIR צר ≥ 50%. |
 | Circadian, Negative basal | 6.6.1–6.6.2 | מלא. שעות שינה: ברירת מחדל 22/7 (אין HealthKit) |
 | Caffeine / Alcohol | 6.6.5–6.6.6 | מלא, כ-`treatments` עם `eventType` ייעודי שנרשם מה-Careportal |
 | CGM Signal Quality | 6.6.7 | מלא: פערים בין `entries` |
@@ -74,7 +74,7 @@ _הערת שפה: מסמכי המאגר כתובים אנגלית. מסמך זה
 
 1. **כל קריאות ה-AI מהשרת בלבד.** ה-CSP של Nightscout (`connectSrc: 'self'`) חוסם קריאות דפדפן לספק חיצוני, והמפתח אסור שיגיע ללקוח. הדפדפן מדבר רק עם `/api/v1/aiinsights/*`.
 2. **פלאגין, לא שינוי ליבה.** לפי `CONTRIBUTING.md`: תכונה חדשה חיה בפלאגין ואינה דורשת שינוי בפלאגינים קיימים. נקודות המגע עם הליבה: רישום ב-`lib/plugins/index.js`, mount מותנה ב-`lib/api/index.js`, אוספים ב-`env.js`, דף ב-`app.js`. כולן מותנות ב-`ENABLE=aiinsights`.
-3. **שכבת האימות אינה תלויה בפרומט.** סעיף 6.7 במפרט ממומש בקוד שרת (`validator.js`) ונבדק ביחידה. הפרומט מבקש 20%/10%, הקוד אוכף 25%/15% עם clamp, בדיוק כמו במקור.
+3. **שכבת האימות אינה תלויה בפרומט.** סעיף 6.7 במפרט ממומש בקוד שרת (`validator.js`) ונבדק ביחידה. הפרומט מבקש 20% לכל שלוש ההגדרות (כולל Basal, גם בשעות הלילה), הקוד אוכף 25% עם clamp. זו סטייה מכוונת מהמקור, שבו Basal הוגבל ל-10%/15%.
 4. **mg/dL פנימי, המרה בפלט.** כל האגרגציה והפרומטים ב-mg/dL. בלוק `UNIT CONTEXT` מורה למודל להמיר. שדות `current_value`/`proposed_value` של ISF נשארים mg/dL גם בתשובה וגם ב-Mongo. התצוגה ממירה לפי `settings.units`.
 5. **ייעוץ בלבד.** אין כתיבה ל-`profile` ואין שליחת פקודות ל-Loop. ההצעות נשמרות, מוצגות, ומסומנות ידנית כ-applied / dismissed / reverted.
 6. **עבודה אסינכרונית.** קריאת LLM אורכת עד 60 שניות. ספקי אירוח נפוצים ל-Nightscout (Heroku, Railway, Fly) מנתקים בקשות אחרי ~30 שניות. לכן כל ניתוח הוא job: `POST` מחזיר 202 עם `jobId`, הלקוח מתשאל, והתוצאה נשמרת ב-Mongo.
@@ -343,7 +343,7 @@ Nightscout אינו מקבל "מנות" כמו `DoseStore`. `basal-integrator.js
     "expected_outcomes": ["…"], "evaluation_days": 5,
     "revert_warnings": ["…"], "metric_targets": { "overnight_avg": "<130 mg/dL" }
   },
-  "validation_notes": ["clamped basal 00:00-06:00 from +18% to +15%", "citation 162 not found in hourly averages"],
+  "validation_notes": ["clamped basal 00:00-06:00 from +30% to +25%", "citation 162 not found in hourly averages"],
   "status": "pending | applied | dismissed | reverted | superseded",
   "status_changed_at": "…",
   "applied_at": null,
@@ -680,7 +680,7 @@ GET /report.pdf?period=14&sections=...
 | 2 | תיקון JSON קטוע | הסרת מפתח-ערך חלקי אחרי הפסיק האחרון, סגירת מחרוזת, סגירת `]`/`}` חסרים |
 | 3 | זיהוי מעטפת API | מפתחות `candidates`/`usageMetadata` → `EmptyThinkingResponse` |
 | 4 | שדות חובה ועיגול | `time_blocks`, `reasoning`, `confidence ∈ {low,medium,high}`. עיגול: CR 0.1, Basal 0.05, ISF שלם |
-| 5 | סינון בלוקים | מחוץ לגבול מוחלט → נדחה; מחוץ למומלץ → אזהרה; שינוי > 25% (CR/ISF) או > 15% (Basal) → נדחה; proposed == current מעוגל → no-op |
+| 5 | סינון בלוקים | מחוץ לגבול מוחלט → נדחה; מחוץ למומלץ → אזהרה; שינוי > 25% (CR/ISF/Basal) → נדחה; proposed == current מעוגל → no-op |
 | 6 | success_criteria | `evaluation_days` ברירת מחדל 5; נשמר רק עם `expected_outcomes` |
 | 7 | מיזוג | כל ההצעות לאותו סוג → אחת: בלוקים ממוינים, הביטחון הגבוה, reasoning מחובר, success_criteria ו-plain_summary הראשונים שאינם ריקים |
 | 8 | Clamp | בלוק שחרג מהסף אך לא יותר מפי 1.5 ממנו מכווץ לסף + `validation_notes` |

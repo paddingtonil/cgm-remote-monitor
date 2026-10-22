@@ -237,13 +237,23 @@ describe('aiinsights validator', function () {
       notes.join(' ').should.match(/recommended range/).and.match(/kept/);
     });
 
-    it('clamps a 20% basal change to 15% with a note', function () {
+    it('accepts a 20% basal change unchanged, overnight included', function () {
       const notes = [];
       const blocks = validator.validateTimeBlocks([
         { start_seconds: 0, end_seconds: 21600, current_value: 1.0, proposed_value: 1.2 }
       ], 'basal_rate', notes);
       blocks.should.have.lengthOf(1);
-      blocks[0].proposed_value.should.equal(1.15);
+      blocks[0].proposed_value.should.equal(1.2);
+      notes.join(' ').should.not.match(/clamped/);
+    });
+
+    it('clamps a 30% basal change to 25% with a note', function () {
+      const notes = [];
+      const blocks = validator.validateTimeBlocks([
+        { start_seconds: 0, end_seconds: 21600, current_value: 1.0, proposed_value: 1.3 }
+      ], 'basal_rate', notes);
+      blocks.should.have.lengthOf(1);
+      blocks[0].proposed_value.should.equal(1.25);
       notes.join(' ').should.match(/clamped/);
     });
 
@@ -253,7 +263,7 @@ describe('aiinsights validator', function () {
         { start_seconds: 0, end_seconds: 21600, current_value: 1.0, proposed_value: 1.4 }
       ], 'basal_rate', notes);
       blocks.should.have.lengthOf(0);
-      notes.join(' ').should.match(/exceeds 15%/).and.match(/rejected/);
+      notes.join(' ').should.match(/exceeds 25%/).and.match(/rejected/);
     });
 
     it('clamps a 30% carb ratio change to 25%', function () {
@@ -353,6 +363,30 @@ describe('aiinsights validator', function () {
 
     it('returns null for an empty list', function () {
       (validator.mergeSuggestions([], 'basal_rate') === null).should.be.true();
+    });
+  });
+
+  describe('checkRangeCitations', function () {
+    const stats = { tir: 72.5, titr: 45.1 };
+
+    it('accepts matching standard and tight TIR figures', function () {
+      validator.checkRangeCitations('TIR is 72.5% and tight TIR is 45%.', stats).should.eql([]);
+    });
+
+    it('notes a wrong standard TIR', function () {
+      validator.checkRangeCitations('Your TIR of 85% is excellent.', stats)
+        .should.eql(['citation TIR 85% does not match the data (72.5%)']);
+    });
+
+    it('notes a wrong tight TIR without also flagging it as standard TIR', function () {
+      validator.checkRangeCitations('Tight TIR was 60% over the period.', stats)
+        .should.eql(['citation tight TIR 60% does not match the data (45.1%)']);
+    });
+
+    it('ignores thresholds and missing stats', function () {
+      validator.checkRangeCitations('Outcomes are good only when TIR >80% or TIR above 70%.', stats).should.eql([]);
+      validator.checkRangeCitations('TIR is 99%', null).should.eql([]);
+      validator.checkRangeCitations('TIR is 99%', { tir: null, titr: null }).should.eql([]);
     });
   });
 

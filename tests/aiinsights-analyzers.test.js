@@ -135,12 +135,26 @@ describe('aiinsights analyzers', function () {
   describe('settingsScore', function () {
     function score (g) { return analyzers.settingsScore(cleanAgg({ glucose: g })); }
 
-    it('awards TIR points per the spec bands', function () {
-      score({ inRangePct: 90 }).components.tir.should.equal(40);
-      score({ inRangePct: 80 }).components.tir.should.equal(30);
-      score({ inRangePct: 70 }).components.tir.should.equal(20);
-      score({ inRangePct: 60 }).components.tir.should.equal(8);
+    it('awards standard TIR points (max 30, the spec curve scaled by 0.75)', function () {
+      score({ inRangePct: 90 }).components.tir.should.equal(30);
+      score({ inRangePct: 80 }).components.tir.should.equal(22.5);
+      score({ inRangePct: 70 }).components.tir.should.equal(15);
+      score({ inRangePct: 60 }).components.tir.should.equal(6);
       score({ inRangePct: 40 }).components.tir.should.equal(0);
+    });
+
+    it('awards tight TIR points (max 10) in tiers', function () {
+      score({ titrPct: 70 }).components.titr.should.equal(10);
+      score({ titrPct: 69.9 }).components.titr.should.equal(7);
+      score({ titrPct: 50 }).components.titr.should.equal(7);
+      score({ titrPct: 49.9 }).components.titr.should.equal(4);
+      score({ titrPct: 30 }).components.titr.should.equal(4);
+      score({ titrPct: 29.9 }).components.titr.should.equal(0);
+      score({ titrPct: NaN }).components.titr.should.equal(0);
+    });
+
+    it('keeps the maximum total at 100 with both ranges', function () {
+      score({ inRangePct: 100, titrPct: 100, tbrPct: 0, cv: 20, gmi: 6 }).total.should.equal(100);
     });
 
     it('awards TBR points per the spec bands', function () {
@@ -169,14 +183,32 @@ describe('aiinsights analyzers', function () {
       a.settingsAlreadyOptimal.should.be.true();
 
       const b = score({ inRangePct: 80, tbrPct: 2, cv: 33, gmi: 6.9 });
-      b.total.should.equal(77);
-      b.grade.should.equal('C');
+      b.total.should.equal(80);   // 22.5 + 10 + 20 + 15 + 12 = 79.5
+      b.grade.should.equal('B');
       b.settingsAlreadyOptimal.should.be.false();
 
       score({ inRangePct: 86, tbrPct: 3.9, cv: 40, gmi: 7.2 }).settingsAlreadyOptimal.should.be.true();
       score({ inRangePct: 86, tbrPct: 4, cv: 40, gmi: 7.2 }).settingsAlreadyOptimal.should.be.false();
+    });
+
+    it('requires tight TIR >= 50 for the optimal flag', function () {
+      score({ inRangePct: 90, titrPct: 50, tbrPct: 1 }).settingsAlreadyOptimal.should.be.true();
+      score({ inRangePct: 90, titrPct: 49.9, tbrPct: 1 }).settingsAlreadyOptimal.should.be.false();
+      score({ inRangePct: 90, titrPct: NaN, tbrPct: 1 }).settingsAlreadyOptimal.should.be.false();
+      score({ inRangePct: 85, titrPct: 80, tbrPct: 1 }).settingsAlreadyOptimal.should.be.false();
+    });
+
+    it('scores a wide TIR / tight TIR gap lower than a narrow one', function () {
+      const wide = score({ inRangePct: 86, titrPct: 40, tbrPct: 1, cv: 25, gmi: 6.4 });
+      const narrow = score({ inRangePct: 86, titrPct: 65, tbrPct: 1, cv: 25, gmi: 6.4 });
+      wide.components.titr.should.equal(4);
+      narrow.components.titr.should.equal(7);
+      narrow.total.should.be.above(wide.total);
+    });
+
+    it('keeps the remaining grade checks', function () {
       score({ inRangePct: 72, tbrPct: 6, cv: 44, gmi: 7.9 }).grade.should.equal('F');
-      score({ inRangePct: 80, tbrPct: 3, cv: 33, gmi: 6.8 }).grade.should.equal('C');
+      score({ inRangePct: 80, tbrPct: 3, cv: 40, gmi: 6.8 }).grade.should.equal('C');
       score({ inRangePct: 85, tbrPct: 3, cv: 29, gmi: 6.8 }).grade.should.equal('B');
       score({ inRangePct: 75, tbrPct: 5, cv: 33, gmi: 7.2 }).grade.should.equal('D');
     });
