@@ -52,6 +52,8 @@
 .ai-chip { padding: 6px 10px; border-radius: 6px; background: #2a2a2a; border: 1px solid #444; min-width: 90px; }
 .ai-chip .ai-chip-label { display: block; font-size: 0.75em; color: #999; }
 .ai-chip .ai-chip-value { font-size: 1.15em; font-weight: bold; }
+.ai-legend { flex-basis: 100%; font-size: 0.8em; color: #999; line-height: 1.5; }
+.ai-legend strong { color: #ccc; }
 .ai-chip.green { border-color: #74A52E; }
 .ai-chip.yellow { border-color: #F0CA4C; }
 .ai-chip.orange { border-color: #e08a1e; }
