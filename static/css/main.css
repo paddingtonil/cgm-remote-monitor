@@ -837,3 +837,7 @@ a, a:visited, a:link {
     line-height: 13px;
   }
 }
+/* Circulating basal insulin (CBI) pill: orange so it is distinct from the IOB pill */
+.pill.cbi em {
+  color: #ff9d2e;
+}
