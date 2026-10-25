@@ -108,6 +108,16 @@ describe('day-to-day report: circulating basal insulin (CBI)', function () {
     assert.ok(!/NaN/.test(lines[0].getAttribute('points')), lines[0].getAttribute('points'));
   });
 
+  it('scales CBI on its own so small changes are visible, and labels the range', function () {
+    render([loopStatus(1, 9, 0.90), loopStatus(1.5, 9, 0.60), loopStatus(2, 9, 0.80)], { cbi: true, maxInsulinValue: 10 });
+
+    const ys = cbiLines()[0].getAttribute('points').split(',').filter(Boolean)
+      .filter((value, index) => index % 2 === 1).map(Number);
+    assert.ok(Math.max.apply(null, ys.slice(0, 3)) - Math.min.apply(null, ys.slice(0, 3)) > 10, 'line must not be flat: ' + ys);
+    const label = Array.from(env.document.querySelectorAll('#daytodaychart-' + DAY + ' svg text')).map(t => t.textContent);
+    assert.ok(label.includes('CBI 0.80U (0.60–0.90)'), label.join('|'));
+  });
+
   it('does not draw the CBI line when the option is off', function () {
     render([loopStatus(1, 1.5, 0.4)], { cbi: false });
 
