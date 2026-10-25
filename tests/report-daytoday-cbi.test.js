@@ -120,6 +120,15 @@ describe('day-to-day report: circulating basal insulin (CBI)', function () {
     assert.ok(label.includes('CBI 0.80U (0.60–0.90)'), label.join('|'));
   });
 
+  it('keeps the IOB line inside the chart when it exceeds the largest single treatment', function () {
+    render([loopStatus(1, 3.0, 0.9), loopStatus(1.5, 2.5, 0.9)], { iob: true, maxInsulinValue: 0.3 });
+
+    const iobLine = Array.from(env.document.querySelectorAll('#daytodaychart-' + DAY + ' svg polyline'))
+      .find(line => line.getAttribute('stroke') === 'blue');
+    const ys = iobLine.getAttribute('points').split(/[ ,]+/).filter(Boolean).map(Number).filter((v, i) => i % 2 === 1);
+    assert.ok(Math.min.apply(null, ys) >= 0, 'IOB line must not run above the chart: ' + ys);
+  });
+
   it('does not draw the CBI line when the option is off', function () {
     render([loopStatus(1, 1.5, 0.4)], { cbi: false });
 
