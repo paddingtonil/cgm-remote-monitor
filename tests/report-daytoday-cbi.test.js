@@ -105,13 +105,15 @@ describe('day-to-day report: circulating basal insulin (CBI)', function () {
 
     const lines = cbiLines();
     assert.equal(lines.length, 1);
-    assert.ok(!/NaN/.test(lines[0].getAttribute('points')), lines[0].getAttribute('points'));
+    const pts = lines[0].getAttribute('points');
+    assert.ok(!/NaN/.test(pts), pts);
+    assert.ok(/^[0-9.]+,[0-9.]+( [0-9.]+,[0-9.]+)+$/.test(pts), 'points must be "x,y x,y" with no stray commas: ' + pts);
   });
 
   it('scales CBI on its own so small changes are visible, and labels the range', function () {
     render([loopStatus(1, 9, 0.90), loopStatus(1.5, 9, 0.60), loopStatus(2, 9, 0.80)], { cbi: true, maxInsulinValue: 10 });
 
-    const ys = cbiLines()[0].getAttribute('points').split(',').filter(Boolean)
+    const ys = cbiLines()[0].getAttribute('points').split(/[ ,]/).filter(Boolean)
       .filter((value, index) => index % 2 === 1).map(Number);
     assert.ok(Math.max.apply(null, ys.slice(0, 3)) - Math.min.apply(null, ys.slice(0, 3)) > 10, 'line must not be flat: ' + ys);
     const label = Array.from(env.document.querySelectorAll('#daytodaychart-' + DAY + ' svg text')).map(t => t.textContent);
