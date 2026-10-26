@@ -34,17 +34,15 @@ describe('overridden dependency versions', function () {
     });
   });
 
-  it('resolves request\'s form-data at or above 2.5.6', function () {
-    const version = resolvedFrom('request', 'form-data');
-    assert.ok(semver.gte(version, '2.5.6'), 'request resolves form-data ' + version);
-  });
-
-  it('escapes line breaks in multipart field names and filenames built through request', function () {
-    const FormData = createRequire(require.resolve('request/package.json'))('form-data');
-    const form = new FormData();
-    form.append('name\r\nX-Extra: 1', 'value', { filename: 'file\r\n.txt' });
-    const head = form.getBuffer().toString().split('\r\n')[1];
-    assert.strictEqual(head, 'Content-Disposition: form-data; name="name%0D%0AX-Extra: 1"; filename="file%0D%0A.txt"');
+  // request (with its form-data) and minimed-connect-to-nightscout came in only through
+  // the legacy Dexcom and MiniMed bridges, which this release removes. The form-data
+  // override guarded request's copy; with request gone there is nothing left to pin.
+  ['request', 'share2nightscout-bridge', 'minimed-connect-to-nightscout'].forEach(function (name) {
+    it('locks no copy of ' + name + ' (the legacy bridges are removed)', function () {
+      const copies = Object.keys(lock.packages)
+        .filter(packagePath => packagePath === 'node_modules/' + name || packagePath.endsWith('/node_modules/' + name));
+      assert.deepStrictEqual(copies, []);
+    });
   });
 });
 
@@ -53,11 +51,20 @@ describe('overridden dependency versions', function () {
 // line (nightscout-connect's axios 1.x) and is not checked here.
 describe('advisory floors in the installed tree', function () {
   const floors = {
-    'ip-address': { 10: '10.7.1' },
-    'fast-uri': { 3: '3.1.8' },
+    'ip-address': { 10: '10.7.5' },
+    'fast-uri': { 3: '3.1.9' },
     'axios': { 0: '0.34.0' },
-    'dompurify': { 3: '3.4.16' },
-    'webpack-dev-middleware': { 8: '8.3.0' }
+    'dompurify': { 3: '3.4.17' },
+    'webpack-dev-middleware': { 8: '8.3.0' },
+    'body-parser': { 1: '1.20.9' },
+    'compression': { 1: '1.8.2' },
+    'sanitize-html': { 2: '2.18.1' },
+    'moment': { 2: '2.31.0' },
+    'follow-redirects': { 1: '1.16.1' },
+    'source-map-js': { 1: '1.2.2' },
+    'serialize-javascript': { 7: '7.1.4' },
+    'csv-parse': { 7: '7.0.3' },
+    'uuid': { 11: '11.1.1' }
   };
 
   Object.keys(floors).forEach(function (name) {
@@ -106,8 +113,8 @@ describe('advisory floors in the installed tree', function () {
     });
   });
 
-  // IMPORT_CONFIG (lib/server/bootevent.js) and the MiniMed bridge both load axios 0.x.
-  [['the server', require.resolve('../lib/server/bootevent')], ['minimed-connect-to-nightscout', require.resolve('minimed-connect-to-nightscout/package.json')]]
+  // IMPORT_CONFIG (lib/server/bootevent.js) loads axios 0.x.
+  [['the server', require.resolve('../lib/server/bootevent')]]
     .forEach(function ([label, from]) {
       it('keeps the request method when Object.prototype.method is set, for axios loaded by ' + label, async function () {
         const axios = createRequire(from)('axios');

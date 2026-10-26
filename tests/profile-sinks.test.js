@@ -236,7 +236,10 @@ describe('profile-derived browser sinks', function () {
     };
     var reportPlugins = {
       consts: {ORDER_NEWESTONTOP: 'newest'}
-      , utils: {localeDate: function (value) { return value; }}
+      , utils: {
+        localeDate: function (value) { return value; }
+        , momentAt: function (value) { return moment(value); }
+      }
     };
     env.window.Nightscout = {client: client, report_plugins: reportPlugins};
 
