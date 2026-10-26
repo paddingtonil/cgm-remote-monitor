@@ -46,7 +46,7 @@ describe('report utils: trip days from the pump time zone history', function () 
     var rangeProfile = require('../lib/profilefunctions')(null, helper.ctx);
     rangeProfile.loadData(history);
 
-    var settings = { timeDisplay: 'patient', homeTimezone: 'Asia/Jerusalem', timeFormat: 24 };
+    var settings = { homeTimezone: 'Asia/Jerusalem', timeFormat: 24 };
     tz = require('../lib/client-core/timezone-context')({ moment: moment, settings: settings, profile: dashboardProfile });
     tz.setProfile(rangeProfile); // what reportclient does once the range is loaded
 
@@ -124,7 +124,7 @@ describe('report utils: trip days from the pump time zone history', function () 
     var dashboardOnly = require('../lib/profilefunctions')(null, helper.ctx);
     dashboardOnly.loadData([history[0]]);
     var broken = require('../lib/client-core/timezone-context')({
-      moment: moment, settings: { timeDisplay: 'patient', homeTimezone: 'Asia/Jerusalem' }, profile: dashboardOnly
+      moment: moment, settings: { homeTimezone: 'Asia/Jerusalem' }, profile: dashboardOnly
     });
     broken.isAwayAt(moment.utc('2026-10-04T12:00:00Z').valueOf(), null).should.equal(false);
     broken.momentAt(moment.utc('2026-10-04T12:00:00Z').valueOf(), null).format('HH:mm').should.equal('15:00');

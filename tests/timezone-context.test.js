@@ -33,18 +33,6 @@ describe('timezone-context', function () {
     return tzContext({ moment: moment, settings: settings || {}, profile: profile || null });
   }
 
-  describe('mode', function () {
-    it('defaults to patient time', function () {
-      make({}).mode().should.equal('patient');
-      make({ timeDisplay: 'nonsense' }).mode().should.equal('patient');
-    });
-
-    it('honours TIME_DISPLAY', function () {
-      make({ timeDisplay: 'browser' }).mode().should.equal('browser');
-      make({ timeDisplay: 'profile' }).mode().should.equal('profile');
-    });
-  });
-
   describe('home', function () {
     it('is HOME_TIMEZONE, with daylight saving applied at the instant', function () {
       var tz = make({ homeTimezone: 'Asia/Jerusalem' });
@@ -135,21 +123,10 @@ describe('timezone-context', function () {
   describe('displayOffsetAt / momentAt', function () {
     var profile = profileWith([storeProfile('2020-01-01', 'Asia/Jerusalem')]);
 
-    it('patient mode shows the record wall clock', function () {
-      var tz = make({ timeDisplay: 'patient', homeTimezone: 'Asia/Jerusalem' }, profile);
+    it('shows the record wall clock', function () {
+      var tz = make({ homeTimezone: 'Asia/Jerusalem' }, profile);
       tz.momentAt(winter, { utcOffset: 540 }).format('HH:mm').should.equal('21:00');
       tz.momentAt(winter, { utcOffset: 0 }).format('HH:mm').should.equal('14:00');
-    });
-
-    it('profile mode ignores the record offset', function () {
-      var tz = make({ timeDisplay: 'profile', homeTimezone: 'Asia/Jerusalem' }, profile);
-      tz.momentAt(winter, { utcOffset: 540 }).format('HH:mm').should.equal('14:00');
-    });
-
-    it('browser mode leaves the moment in local time', function () {
-      var tz = make({ timeDisplay: 'browser', homeTimezone: 'Asia/Jerusalem' }, profile);
-      (tz.displayOffsetAt(winter, { utcOffset: 540 }) === null).should.equal(true);
-      tz.momentAt(winter, { utcOffset: 540 }).utcOffset().should.equal(moment(winter).utcOffset());
     });
 
     it('format() is a shorthand', function () {
@@ -463,17 +440,10 @@ describe('timezone-context', function () {
     var now = winter;
     var data = { treatments: [{ mills: now - 60 * 1000, utcOffset: 540 }] };
 
-    it('follows the patient in patient mode', function () {
+    it('follows the patient', function () {
       make({ homeTimezone: 'Asia/Jerusalem' }, profile).displayOffsetNow(data, now).should.equal(540);
     });
 
-    it('is the profile zone in profile mode', function () {
-      make({ timeDisplay: 'profile', homeTimezone: 'Asia/Jerusalem' }, profile).displayOffsetNow(data, now).should.equal(120);
-    });
-
-    it('is null (browser) in browser mode', function () {
-      (make({ timeDisplay: 'browser' }, profile).displayOffsetNow(data, now) === null).should.equal(true);
-    });
   });
 
   describe('labels', function () {
@@ -582,17 +552,6 @@ describe('timezone-context', function () {
         '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28', '2026-09-29', '2026-09-30'
         , '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06'
       ]);
-    });
-
-    it('is the profile zone of the day in profile mode', function () {
-      var profileMode = make({ timeDisplay: 'profile', homeTimezone: 'Asia/Jerusalem' }, trip);
-      iso(profileMode.dayStart('2026-09-27')).should.equal('2026-09-27T04:00:00Z');
-      iso(profileMode.dayStart('2026-09-24')).should.equal('2026-09-23T21:00:00Z');
-    });
-
-    it('is the browser\'s midnight in browser mode', function () {
-      var browser = make({ timeDisplay: 'browser', homeTimezone: 'Asia/Jerusalem' }, trip);
-      browser.dayStart('2026-09-27').valueOf().should.equal(moment('2026-09-27', 'YYYY-MM-DD').valueOf());
     });
 
     it('uses an IANA zone with its daylight saving when one is known', function () {

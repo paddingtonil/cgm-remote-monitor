@@ -42,7 +42,7 @@ describe('timezone plugin (travelling indicator)', function () {
   });
 
   it('is hidden while the patient is at home', function () {
-    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'patient' }, { treatments: [{ mills: now - 60000, utcOffset: 120 }], sgvs: [] });
+    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem' }, { treatments: [{ mills: now - 60000, utcOffset: 120 }], sgvs: [] });
     plugin.setProperties(sbx);
     plugin.updateVisualisation(sbx);
     sbx.pills.length.should.equal(1);
@@ -50,7 +50,7 @@ describe('timezone plugin (travelling indicator)', function () {
   });
 
   it('is hidden when nothing is known about where the patient is', function () {
-    var sbx = sandboxWith({ timeDisplay: 'patient' }, { treatments: [], sgvs: [] });
+    var sbx = sandboxWith({  }, { treatments: [], sgvs: [] });
     sbx.tz.setProfile(null);
     plugin.setProperties(sbx);
     plugin.updateVisualisation(sbx);
@@ -58,7 +58,7 @@ describe('timezone plugin (travelling indicator)', function () {
   });
 
   it('shows the patient zone when away from home, with both local times', function () {
-    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'patient' }, { treatments: [{ mills: now - 60000, utcOffset: 540 }], sgvs: [] });
+    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem' }, { treatments: [{ mills: now - 60000, utcOffset: 540 }], sgvs: [] });
     plugin.setProperties(sbx);
     plugin.updateVisualisation(sbx);
 
@@ -76,13 +76,6 @@ describe('timezone plugin (travelling indicator)', function () {
     info['Home local time'].should.equal('2:00 PM');
     info.should.have.property('Away since');
     info.should.have.property('Browser time');
-  });
-
-  it('is hidden in browser mode even when away', function () {
-    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'browser' }, { treatments: [{ mills: now - 60000, utcOffset: 540 }], sgvs: [] });
-    plugin.setProperties(sbx);
-    plugin.updateVisualisation(sbx);
-    sbx.pills[0].hide.should.equal(true);
   });
 
   it('offers a Trip event type to the careportal, saved through its own hook', function () {
@@ -120,7 +113,7 @@ describe('timezone plugin (travelling indicator)', function () {
   });
 
   it('names a declared trip in the pill when that is where the patient is', function () {
-    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'patient' }, { treatments: [], sgvs: [] });
+    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem' }, { treatments: [], sgvs: [] });
     sbx.tz.setDeclaredTrips([{ _id: 't', eventType: 'Travel', startDate: '2024-01-10', endDate: '2024-01-20', timezone: 'Asia/Tokyo', created_at: '2024-01-10T00:00:00.000Z' }]);
     plugin.setProperties(sbx);
     plugin.updateVisualisation(sbx);
@@ -135,7 +128,7 @@ describe('timezone plugin (travelling indicator)', function () {
   });
 
   it('sandbox formatTime / formatDateTime use the display clock', function () {
-    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem', timeDisplay: 'patient' }, { treatments: [], sgvs: [] });
+    var sbx = sandboxWith({ homeTimezone: 'Asia/Jerusalem' }, { treatments: [], sgvs: [] });
     sbx.formatTime(now, { utcOffset: 540 }).should.equal('9:00 PM');
     sbx.formatTime(now).should.equal('2:00 PM'); // profile zone, Israel
     sbx.formatDateTime(now, { utcOffset: -300 }).should.equal('01/15/2024 7:00 AM');
