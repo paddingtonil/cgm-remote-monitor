@@ -1,26 +1,22 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const selectedWidgetsReady = require('./ui-widget-probe');
 const path = require('node:path');
 const {fork} = require('node:child_process');
 const {once} = require('node:events');
 const {getBrowser} = require('./hooks');
-
-function compiled(worker) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => finish(new Error('Page HMR compiler timed out')), 60000);
-    const onMessage = message => finish(message.error ? new Error(message.error) : null, message);
-    const onExit = code => finish(new Error('Page HMR compiler exited: ' + code));
-    function finish(error, value) {
-      clearTimeout(timer); worker.off('message', onMessage); worker.off('exit', onExit);
-      if (error) reject(error); else resolve(value);
-    }
-    worker.once('message', onMessage); worker.once('exit', onExit);
-  });
-}
+const compiled = require('./compiled-worker');
 
 describe('Actual page entries with development hot middleware', function () {
   let worker, origin, stderr = '';
+  let requestId = 0;
+  function update(message) {
+    const id = ++requestId;
+    const build = compiled(worker, id);
+    worker.send({...message, requestId: id});
+    return build;
+  }
   const exports = {app: 'client', reports: 'reportclient', admin: 'admin_plugins', profile: 'profileclient', food: 'foodclient'};
   before(async function () {
     this.timeout(65000);
@@ -63,15 +59,14 @@ describe('Actual page entries with development hot middleware', function () {
       // public exports and draft rather than replacing the global namespace.
       for (const entry of ['reports', 'admin', 'profile', 'food', 'app']) {
         for (const version of [1, 2]) {
-          const build = compiled(worker);
-          worker.send({entry, version});
-          await build;
+          await update({entry, version});
           for (const [name, page] of pages) {
             if (name === entry || entry === 'app') await page.waitForFunction(({entry, version}) => window.pageHotVersions[entry] === version, {entry, version});
             const result = await page.evaluate(exportName => ({client: window.Nightscout.client === window.initialClient, type: typeof window.Nightscout[exportName]}), exports[name]);
             assert.deepEqual(result, {client: true, type: name === 'app' ? 'object' : 'function'}, name + ' after ' + entry + ' update');
             assert.equal(await page.locator('#draft').inputValue(), 'Unsaved ' + name);
             assert.equal(navigations.get(name), 1, name + ' unexpectedly reloaded');
+            assert.equal(await page.evaluate(selectedWidgetsReady), true, name + ' lost UI widget functions or inline styles after HMR');
           }
         }
       }
@@ -79,4 +74,29 @@ describe('Actual page entries with development hot middleware', function () {
       assert.deepEqual(external, [], 'Unexpected external HMR request');
     } finally {await context.close();}
   });
+
+  it('recovers from repeated compile errors without losing an unsaved draft or reloading', async function () {
+    this.timeout(120000);
+    const context = await getBrowser().newContext({serviceWorkers: 'block'});
+    try {
+      const page = await context.newPage();
+      let navigations = 0;
+      page.on('framenavigated', frame => {if (frame === page.mainFrame()) navigations++;});
+      await page.goto(origin + '/reports');
+      await page.waitForFunction(() => window.pageHotVersions && window.pageHotVersions.reports === 2);
+      await page.locator('#draft').fill('Retain through compilation failure');
+      for (const version of [3, 4]) {
+        await assert.rejects(update({entry: 'reports', broken: true}), /ownedBrokenFixture|Unexpected token/);
+        await page.locator('#webpack-dev-middleware-hot-overlay').waitFor({state: 'visible'});
+        assert.equal(await page.locator('#draft').inputValue(), 'Retain through compilation failure');
+        await update({entry: 'reports', version});
+        await page.waitForFunction(version => window.pageHotVersions.reports === version, version);
+        await page.locator('#webpack-dev-middleware-hot-overlay').waitFor({state: 'detached'});
+        assert.equal(await page.locator('#draft').inputValue(), 'Retain through compilation failure');
+        assert.equal(navigations, 1);
+        assert.equal(await page.evaluate(() => typeof window.Nightscout.reportclient), 'function');
+      }
+    } finally {await context.close();}
+  });
+
 });

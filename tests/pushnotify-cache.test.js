@@ -5,16 +5,16 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const {createRequire} = require('module');
-const NodeCache = require('node-cache');
+const NotificationCache = require('../lib/utils/notification-cache');
 const levels = require('../lib/levels');
 
 function initialize(env, ctx, caches) {
   const filename = path.resolve(__dirname, '../lib/server/pushnotify.js');
   const localRequire = createRequire(filename);
   const sandbox = {module: {exports: {}}, console: {info() {}, warn() {}, error() {}}, require(name) {
-    if (name !== 'node-cache') return localRequire(name);
+    if (name !== '../utils/notification-cache') return localRequire(name);
     return function (options) {
-      const cache = new NodeCache(options);
+      const cache = new NotificationCache(options);
       caches.push(cache);
       return cache;
     };
@@ -64,6 +64,49 @@ describe('push notification deduplication cache', function () {
     assert.strictEqual(push.pushoverAck({receipt: 'fixture-receipt'}), false);
     assert.strictEqual(push.pushoverAck({}), false);
   });
+
+  it('snapshots receipt fields before asynchronous multi-recipient responses', function () {
+    let complete;
+    ctx.pushover.send = (notify, callback) => { complete = callback; };
+    const push = initialize(env, ctx, caches);
+    const payload = notification();
+    push.emitNotification(payload);
+    payload.level = levels.URGENT;
+    payload.group = 'changed-in-flight';
+    payload.eventName = 'changed-in-flight';
+    complete(null, JSON.stringify({receipt: 'first-recipient'}));
+    complete(null, JSON.stringify({receipt: 'second-recipient'}));
+    for (const receipt of ['first-recipient', 'second-recipient']) {
+      assert.strictEqual(push.pushoverAck({receipt}), true);
+      assert.deepStrictEqual(acknowledgements.pop(), [levels.WARN, 'fixture-group', 420000, true]);
+      assert.strictEqual(push.pushoverAck({receipt}), false);
+    }
+  });
+
+  for (const provider of ['pushover', 'maker']) {
+    it('extends the dispatched key when a reused payload changes during ' + provider + ' send', function () {
+      const callbacks = [];
+      delete ctx.pushover;
+      ctx[provider] = provider === 'pushover'
+        ? {send(notify, callback) { sent.push(notify.key); callbacks.push(callback); }}
+        : {sendEvent(event, callback) { sent.push(event); callbacks.push(callback); }};
+      const push = initialize(env, ctx, caches);
+      const payload = notification();
+      push.emitNotification(payload);
+      payload.notifyhash = 'second-key';
+      push.emitNotification(payload);
+      // The first request succeeds after the second request fails. Only the
+      // first key should gain the longer suppression interval.
+      callbacks[1](new Error('second request failed'));
+      now += 1000;
+      callbacks[0](null, '{}');
+      now += 29001;
+      push.emitNotification(notification());
+      assert.strictEqual(sent.length, 2, 'Successful first key remains suppressed');
+      push.emitNotification(Object.assign(notification(), {notifyhash: 'second-key'}));
+      assert.strictEqual(sent.length, 3, 'Failed second key can retry after 30 seconds');
+    });
+  }
 
   it('extends successful sends to 15 minutes and expires repeatedly', function () {
     const push = initialize(env, ctx, caches);
@@ -156,6 +199,56 @@ describe('push notification deduplication cache', function () {
     }
     assert.strictEqual(sent.length, 2);
     assert.deepStrictEqual(acknowledgements, []);
+  });
+
+  it('releases cached values, timers and notification listeners on teardown over two cycles', function () {
+    const {EventEmitter} = require('node:events');
+    ctx.bus = new EventEmitter();
+    const originalSet = global.setTimeout, originalClear = global.clearTimeout;
+    const originalInterval = global.setInterval, originalClearInterval = global.clearInterval;
+    const pending = new Set();
+    global.setTimeout = global.setInterval = function () { const handle = {unref() {return this;}}; pending.add(handle); return handle; };
+    global.clearTimeout = handle => pending.delete(handle);
+    global.clearInterval = global.clearTimeout;
+    try {
+      for (let cycle = 0; cycle < 2; cycle++) {
+        const push = initialize(env, ctx, caches);
+        ctx.bus.on('notification', push.emitNotification);
+        push.emitNotification(notification());
+        assert.equal(pending.size, 2, 'Two cache housekeeping timers');
+        assert.equal(caches[cycle * 2].keys().length, 1);
+        ctx.bus.emit('teardown');
+        ctx.bus.emit('teardown');
+        assert.equal(pending.size, 0, 'Teardown cancels both housekeeping timers');
+        assert.equal(ctx.bus.listenerCount('notification'), 0);
+        assert.equal(ctx.bus.listenerCount('teardown'), 0);
+        for (const cache of caches) assert.equal(cache.keys().length, 0);
+        push.emitNotification(notification());
+        assert.equal(sent.length, cycle + 1, 'Closed instance cannot send again');
+        assert.equal(push.pushoverAck({receipt: 'fixture-receipt'}), false);
+      }
+    } finally {
+      global.setTimeout = originalSet; global.clearTimeout = originalClear;
+      global.setInterval = originalInterval; global.clearInterval = originalClearInterval;
+    }
+  });
+
+  it('ignores provider completions arriving after teardown without retaining receipts', function () {
+    const {EventEmitter} = require('node:events');
+    ctx.bus = new EventEmitter();
+    const pending = [];
+    ctx.pushover.send = (notify, callback) => { sent.push(notify); pending.push(callback); };
+    for (let cycle = 0; cycle < 2; cycle++) {
+      const push = initialize(env, ctx, caches);
+      push.emitNotification(notification());
+      ctx.bus.emit('teardown');
+      // Closed services must neither parse nor retain late provider responses.
+      assert.doesNotThrow(() => pending[cycle](null, 'late-invalid-json'));
+      pending[cycle](null, JSON.stringify({receipt: 'late-fixture-receipt'}));
+      assert.equal(push.pushoverAck({receipt: 'late-fixture-receipt'}), false);
+      assert.deepStrictEqual(acknowledgements, []);
+      for (const cache of caches) assert.equal(cache.keys().length, 0);
+    }
   });
 
 });

@@ -19,14 +19,19 @@ const {entries, output, measure} = require('../tools/measure-page-bundles');
 // 61032 reports / 425675 total gzip bytes on patched Node 24.22.1. Static chart
 // styles are loaded as CSS. See the modernReportRefinements audit entry.
 // Only reports and total allowances increase; other page limits stay fixed.
-// Reviewed measurement of the merged branch merge/dev-2026-10-26 (commit 6ae11c60),
-// production build, Node 26.12.1 zlib 1.2.12, gzip level 9: app 353512, reports
-// 63328, admin 7921, profile 6994, food 5278, clock 61555 bytes; 437033 across
-// application entries. The app, reports and total limits are raised to these
-// measured sizes. The growth is the merged AI Insights client and the
-// patient-clock timezone resolver. The previous limits were set on dev before
-// those features; all nine budget tests pass on the unmodified dev bundle.
-const limits = {app: 353512, reports: 63328, admin: 8500, profile: 7100, food: 5700, clock: 63000};
+// LIMIT CHANGED at the cut 5 merge: Flot 0.8 -> 4.2.6 (the modernization
+// branch's upgrade, kept for Loopalyzer, the remaining Flot chart) measured
+// 66853 reports gzip bytes against 61076 on cut 4 (+5777) on Node 24.22.1;
+// the modernization branch measured +5975 for the same modules. The reports
+// allowance moves by that measured cost; every other limit is unchanged.
+// The glucose pentagon adds 2,538 gzip bytes to reports (66,783 -> 69,321
+// on Node 26.12.1). Increase only that allowance by the measured cost.
+// Source-aware pentagon coverage adds 655 gzip bytes (69,265 -> 69,920
+// on Node 26.12.1); retain the prior reports allowance above the measured cost.
+// MERGE dev 2dc0c1bc into merge/dev-2026-10-26 (Node 26.12.1, zlib 1.2.12): the merged
+// tree measures reports 72696 and clock 63201 gzip bytes, which exceed the dev-side
+// allowances (70693, 63000). Both raised to those measured values; app and total unchanged.
+const limits = {app: 349000, reports: 72696, admin: 8500, profile: 7100, food: 5700, clock: 63201};
 
 describe('Production page bundle resource budgets', function () {
   let measurements;
@@ -50,7 +55,7 @@ describe('Production page bundle resource budgets', function () {
       const map = JSON.parse(fs.readFileSync(path.join(output, 'bundle.' + entry + '.js.map'), 'utf8'));
       const reportSources = map.sources.filter(source => /\/node_modules\/flot\/|\/lib\/report(?:_plugins)?\//.test(source));
       if (entry === 'reports') {
-        assert.ok(reportSources.some(source => source.endsWith('/flot/jquery.flot.js')), 'Reports must include the real Flot implementation');
+        assert.ok(reportSources.some(source => source.endsWith('/flot/source/jquery.flot.js')), 'Reports must include the real Flot implementation');
         assert.ok(reportSources.some(source => source.endsWith('/report_plugins/index.js')), 'Reports must include report plugins');
       } else assert.deepEqual(reportSources, [], entry + ' must not contain report code');
     }

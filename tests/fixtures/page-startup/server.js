@@ -26,7 +26,7 @@ async function createPageFixture(options = {}) {
   if (options.compress) app.use(require('compression')());
   const apiData = request => options.apiData && options.apiData[request.path] || [];
   const settings = structuredClone(require('../default-server-settings'));
-  settings.settings.enable += ' food';
+  settings.settings.enable += ' food' + (options.enable ? ' ' + options.enable : '');
   app.use((request, response, next) => {
     response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'");
     next();
@@ -62,7 +62,7 @@ async function createPageFixture(options = {}) {
     response.json({message: {message: authenticated ? 'OK' : 'DENIED', isAdmin: authenticated, canRead: authenticated, canWrite: authenticated}});
   });
   app.get('/api/v1/adminnotifies', (request, response) => response.json({message: {notifies: [], notifyCount: 0}}));
-  app.get('/translations/*', (request, response) => response.json({}));
+  app.get('/translations/{*path}', (request, response) => response.json({}));
   app.get('/api/v1/food.json', (request, response) => {
     if (state.foodFailures > 0) {state.foodFailures--; return response.status(503).json({message: 'Temporarily unavailable'});}
     response.json(apiData(request));
