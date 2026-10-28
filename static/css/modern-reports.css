@@ -25,6 +25,12 @@
 .modern-ui .report-page #tabnav .menutab:hover { background: #f7faff; color: #21598c; }
 .modern-ui .report-page #tabnav .selected:hover { background: #194d83; color: #fff; }
 .modern-ui .report-page #tabnav .menutab:focus-visible { outline: 2px solid #477fad; outline-offset: 3px; }
+.modern-ui .report-page #tabnav .tabnav-action {
+  flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; margin: 0 0 0 auto; padding: 7px 10px;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; color: #41546c; cursor: pointer;
+}
+.modern-ui .report-page #tabnav .tabnav-action:hover { background: #f7faff; color: #21598c; }
+.modern-ui .report-page #tabnav .tabnav-action:focus-visible { outline: 2px solid #477fad; outline-offset: 3px; }
 .modern-ui .report-page .report-filters { padding: 20px; border: 1px solid #d8e0ea; border-radius: 12px; background: #fff; }
 .modern-ui .report-page .report-filter-panel { width: 100%; max-width: 90vw; border: 1px solid #d8e0ea; border-radius: 10px; background: #f8fafd; overflow: hidden; }
 .modern-ui .report-page .report-filter-panel > summary { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 16px 20px; color: #43566f; font-size: 15px; font-weight: 600; cursor: pointer; list-style: none; }
