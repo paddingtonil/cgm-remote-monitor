@@ -49,7 +49,10 @@ describe('glucosedistribution report', function distributionReportTests () {
     env.window.Nightscout = {
       client: client
       , report_plugins: {
-        utils: {localeDate: function localeDate (value) { return value; }}
+        utils: {
+          localeDate: function localeDate (value) { return value; }
+          , momentAt: function momentAt (value) { return client.sbx.data.profile.applyTimezone(moment(value)); }
+        }
       }
     };
 

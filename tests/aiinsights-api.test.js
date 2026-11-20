@@ -123,7 +123,7 @@ function build (opts) {
   var app = express();
   app.enable('api');
   var wares = require('../lib/middleware')(env);
-  app.all('/aiinsights*', require('../lib/api/aiinsights')(app, wares, ctx));
+  app.all('/aiinsights{/*rest}', require('../lib/api/aiinsights')(app, wares, ctx));
   return { app: app, mongo: mongo, service: service, env: env };
 }
 
