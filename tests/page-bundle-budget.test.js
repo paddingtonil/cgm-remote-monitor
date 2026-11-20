@@ -28,13 +28,30 @@ const {entries, output, measure} = require('../tools/measure-page-bundles');
 // on Node 26.12.1). Increase only that allowance by the measured cost.
 // Source-aware pentagon coverage adds 655 gzip bytes (69,265 -> 69,920
 // on Node 26.12.1); retain the prior reports allowance above the measured cost.
-// MERGE dev 2dc0c1bc into merge/dev-2026-10-26 (Node 26.12.1, zlib 1.2.12): the merged
-// tree measures reports 72696 and clock 63201 gzip bytes, which exceed the dev-side
-// allowances (70693, 63000). Both raised to those measured values; app and total unchanged.
-// MERGE dev f54941b5 into merge/dev-2026-11-01 (Node 26.12.1, fresh production build):
-// the merged tree measures reports 72916 and clock 63276 gzip bytes, which exceed the
-// prior allowances (72696, 63244). Both raised to those measured values; app and total unchanged.
-const limits = {app: 349000, reports: 72916, admin: 8500, profile: 7100, food: 5700, clock: 63276};
+// BF-223: removing a refused saved API secret and saying so adds 43 gzip bytes
+// to clock (62,968 -> 63,011 on Node 22.23.4); the clock allowance moves by
+// that measured cost and keeps its prior 32-byte margin.
+// Bar/Pie selectors add 858 reports gzip bytes (70,353 -> 71,211 on Node
+// 24.22.1). Move only the reports allowance by that cost, preserving its
+// 340-byte margin; all other artifacts and limits, including total, stay fixed.
+// See docs/audits/report-chart-style-bundle.json for the paired measurements.
+// Calibrations matching and responsive presentation add 468 reports gzip bytes
+// (71,211 -> 71,679 on Node 24.22.1). Keep the existing 340-byte headroom and
+// every other limit. See docs/audits/calibrations-report-bundle.json.
+// Independent hourly basal calculations and their legend add 1,014 reports gzip
+// bytes (71,679 -> 72,693 on Node 24.22.1), retaining the 340-byte margin.
+// Other artifacts/limits are unchanged; see docs/audits/hourly-basal-bundle.json.
+// Final review: formatting unavailable daily insulin averages adds 28 bytes
+// (72,721 reports / 414,169 combined), within these existing limits.
+// Isolated report profile state adds 9 app and 57 reports gzip bytes; all
+// existing allowances hold (72,778 reports / 414,235 combined).
+// Loopalyzer uses the same isolated model: +14 reports gzip bytes
+// (72,792 reports / 414,249 combined), with no change to these limits.
+// MERGE upstream dev 79144cbd into merge/dev-2026-11-20 (Node 26.12.1, zlib 1.2.12, after
+// removing the CBI Day to Day feature): the merged tree measures reports 74940 and clock 63277
+// gzip bytes, which exceed the upstream allowances (73033, 63043). Both raised to those measured
+// values; app and total unchanged.
+const limits = {app: 349000, reports: 74940, admin: 8500, profile: 7100, food: 5700, clock: 63277};
 
 describe('Production page bundle resource budgets', function () {
   let measurements;
